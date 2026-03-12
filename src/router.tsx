@@ -5,13 +5,26 @@ import { CreateEventPage } from './pages/CreateEventPage'
 import { EventDetailPage } from './pages/EventDetailPage'
 import { EventsManagementPage } from './pages/EventsManagementPage'
 import { GetStartedPage } from './pages/GetStartedPage'
+import { MerchantSetupPage } from './pages/MerchantSetupPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 
 const router = createBrowserRouter([
   {
     path: '/',
+    element: <Navigate replace to="/setup/account" />,
+  },
+  {
+    path: 'auth',
     element: <GetStartedPage />,
+  },
+  {
+    path: 'setup',
+    element: <Navigate replace to="/setup/account" />,
+  },
+  {
+    path: 'setup/:step',
+    element: <MerchantSetupPage />,
   },
   {
     element: <DashboardLayout />,
@@ -96,7 +109,7 @@ const router = createBrowserRouter([
   },
   {
     path: '*',
-    element: <Navigate replace to="/" />,
+    element: <Navigate replace to="/setup/account" />,
   },
 ])
 
