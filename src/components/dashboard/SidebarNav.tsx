@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom'
+import brandMark from '../../../BV PORTRAIT MARK.png'
 
 import {
   CalendarIcon,
   CardIcon,
-  MenuPanelIcon,
   OverviewGridIcon,
   SettingsIcon,
   TrendIcon,
@@ -34,7 +34,7 @@ export function SidebarNav() {
   return (
     <aside className="sidebar" aria-label="Primary">
       <div className="sidebar__brand">
-        <MenuPanelIcon className="sidebar__logo" />
+        <img className="sidebar__logo" src={brandMark} alt="Black Volta mark" />
         <span className="sidebar__title">Admin Panel</span>
       </div>
 
