@@ -5,6 +5,24 @@ import { logoIcon } from '../assets/figma'
 import { AuthField } from '../components/auth/AuthField'
 import { AuthModeSwitch } from '../components/auth/AuthModeSwitch'
 import { PasswordRequirements } from '../components/auth/PasswordRequirements'
+import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter'
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function isEmailValid(email: string): boolean {
+  return email.length > 0 && EMAIL_REGEX.test(email)
+}
+
+function isPasswordValid(password: string): boolean {
+  if (password.length < 8) return false
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)) return false
+  if (!/\d/.test(password)) return false
+  return true
+}
+
+function isNonEmpty(value: string): boolean {
+  return value.trim().length > 0
+}
 
 type AuthMode = 'signup' | 'login'
 
@@ -31,6 +49,19 @@ function EyeIcon() {
 
 export function GetStartedPage() {
   const [mode, setMode] = useState<AuthMode>('signup')
+
+  const [signup, setSignup] = useState({
+    businessName: '',
+    contactPerson: '',
+    phone: '',
+    email: '',
+    password: '',
+  })
+
+  const [login, setLogin] = useState({
+    email: '',
+    password: '',
+  })
 
   return (
     <main className="auth-page">
@@ -61,25 +92,44 @@ export function GetStartedPage() {
                 <AuthField
                   label="Business / Organizer Name"
                   placeholder="e.g., Strictly Soul Ghana"
+                  value={signup.businessName}
+                  onChange={(v) => setSignup((s) => ({ ...s, businessName: v }))}
+                  valid={isNonEmpty(signup.businessName)}
                 />
-                <AuthField label="Contact Person" placeholder="e.g., Kofi Mensah" />
+                <AuthField
+                  label="Contact Person"
+                  placeholder="e.g., Kofi Mensah"
+                  value={signup.contactPerson}
+                  onChange={(v) => setSignup((s) => ({ ...s, contactPerson: v }))}
+                  valid={isNonEmpty(signup.contactPerson)}
+                />
                 <AuthField
                   label="Phone Number"
                   placeholder="024 123 4567"
                   helper="Used for account security and payout notifications"
+                  value={signup.phone}
+                  onChange={(v) => setSignup((s) => ({ ...s, phone: v }))}
+                  valid={isNonEmpty(signup.phone)}
                 />
                 <AuthField
                   label="Email Address"
                   placeholder="your@email.com"
                   type="email"
                   helper="We'll send event updates and important notifications here"
+                  value={signup.email}
+                  onChange={(v) => setSignup((s) => ({ ...s, email: v }))}
+                  valid={isEmailValid(signup.email)}
                 />
                 <AuthField
                   label="Password"
                   placeholder="Create a strong password"
                   type="password"
+                  value={signup.password}
+                  onChange={(v) => setSignup((s) => ({ ...s, password: v }))}
+                  valid={isPasswordValid(signup.password)}
                   trailing={<EyeIcon />}
                 />
+                <PasswordStrengthMeter password={signup.password} />
                 <PasswordRequirements />
 
                 <div className="auth-actions">
@@ -98,11 +148,17 @@ export function GetStartedPage() {
                   placeholder="your@email.com"
                   type="email"
                   helper="Use the same email tied to your merchant account"
+                  value={login.email}
+                  onChange={(v) => setLogin((s) => ({ ...s, email: v }))}
+                  valid={isEmailValid(login.email)}
                 />
                 <AuthField
                   label="Password"
                   placeholder="Enter your password"
                   type="password"
+                  value={login.password}
+                  onChange={(v) => setLogin((s) => ({ ...s, password: v }))}
+                  valid={isNonEmpty(login.password)}
                   trailing={<EyeIcon />}
                 />
 

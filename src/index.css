@@ -253,12 +253,34 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   color: rgba(165, 165, 182, 0.82);
+  pointer-events: none;
+}
+
+.auth-field__trailing > *:last-child {
+  pointer-events: auto;
+}
+
+.auth-field__check {
+  width: 20px;
+  height: 20px;
+  color: #22c55e;
+  flex-shrink: 0;
+}
+
+.auth-field__input:not(:placeholder-shown) + .auth-field__trailing .auth-field__check + * {
+  margin-left: 0;
 }
 
 .auth-eye-icon {
   width: 20px;
   height: 20px;
+  cursor: pointer;
+}
+
+.auth-field__input--with-trailing {
+  padding-right: 64px;
 }
 
 .auth-field__helper,
@@ -283,6 +305,69 @@ a {
 .password-checklist__list {
   margin: 0;
   padding-left: 22px;
+}
+
+.password-strength {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.password-strength__bars {
+  display: flex;
+  gap: 4px;
+  width: 80px;
+}
+
+.password-strength__bar {
+  height: 4px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background var(--transition);
+}
+
+.password-strength__bar--empty {
+  background: var(--border);
+}
+
+.password-strength__bar--weak {
+  background: #ef4444;
+}
+
+.password-strength__bar--fair {
+  background: #f97316;
+}
+
+.password-strength__bar--good {
+  background: #eab308;
+}
+
+.password-strength__bar--strong {
+  background: #22c55e;
+}
+
+.password-strength__label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.password-strength__label--weak {
+  color: #f87171;
+}
+
+.password-strength__label--fair {
+  color: #fb923c;
+}
+
+.password-strength__label--good {
+  color: #facc15;
+}
+
+.password-strength__label--strong {
+  color: #22c55e;
 }
 
 .auth-actions {
