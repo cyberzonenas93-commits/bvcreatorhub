@@ -12,95 +12,19 @@ import {
   ImageIcon,
   ShieldCheckIcon,
 } from '../components/ui/Icons'
-
-type SetupStepKey = 'account' | 'verification' | 'payout' | 'review'
-type RegisteredBusiness = 'yes' | 'no'
-type PayoutMethod = 'bank-transfer' | 'mobile-money'
-
-interface MerchantSetupData {
-  organizerName: string
-  contactPerson: string
-  email: string
-  phone: string
-  businessType: string
-  instagram: string
-  logoFileName: string
-  governmentIdFileName: string
-  selfieFileName: string
-  isRegisteredBusiness: RegisteredBusiness
-  payoutMethod: PayoutMethod
-  bankName: string
-  accountName: string
-  accountNumber: string
-  network: string
-  payoutPhone: string
-  settlementPreference: string
-  agreedToPayoutTerms: boolean
-  agreesToCompliance: boolean
-}
-
-const STORAGE_KEY = 'bv-merchant-setup'
-
-const setupSteps = [
-  { id: 'account', label: 'Account' },
-  { id: 'verification', label: 'Verification' },
-  { id: 'payout', label: 'Payout' },
-  { id: 'review', label: 'Review' },
-] as const satisfies ReadonlyArray<{ id: SetupStepKey; label: string }>
-
-const businessTypeOptions = [
-  'Event Organizer',
-  'Festival Producer',
-  'Venue Operator',
-  'Community Brand',
-]
-
-const networkOptions = ['MTN Mobile Money', 'Telecel Cash', 'AirtelTigo Money']
-
-const settlementOptions = ['After event ends', 'Daily settlement', 'Weekly settlement']
-
-const defaultSetupData: MerchantSetupData = {
-  organizerName: 'Strictly Soul Ghana',
-  contactPerson: 'Yaw Afful',
-  email: 'organizer@events.gh',
-  phone: '+233 24 123 4567',
-  businessType: 'Event Organizer',
-  instagram: '@strictlysoulghana',
-  logoFileName: '10.0.2.16.png',
-  governmentIdFileName: 'ghana-card.pdf',
-  selfieFileName: '',
-  isRegisteredBusiness: 'no',
-  payoutMethod: 'mobile-money',
-  bankName: 'GCB Bank',
-  accountName: 'Strictly Soul Ghana',
-  accountNumber: '0599449113',
-  network: 'MTN Mobile Money',
-  payoutPhone: '+233 24 123 4567',
-  settlementPreference: 'After event ends',
-  agreedToPayoutTerms: true,
-  agreesToCompliance: true,
-}
-
-function readStoredSetupData() {
-  if (typeof window === 'undefined') {
-    return defaultSetupData
-  }
-
-  try {
-    const stored = window.sessionStorage.getItem(STORAGE_KEY)
-
-    if (!stored) {
-      return defaultSetupData
-    }
-
-    return {
-      ...defaultSetupData,
-      ...JSON.parse(stored),
-    } satisfies MerchantSetupData
-  } catch {
-    return defaultSetupData
-  }
-}
+import {
+  businessTypeOptions,
+  isEmailValid,
+  isNonEmpty,
+  isPhoneValid,
+  networkOptions,
+  readStoredSetupData,
+  settlementOptions,
+  setupSteps,
+  type MerchantSetupData,
+  type SetupStepKey,
+  writeStoredSetupData,
+} from '../lib/merchantSetup'
 
 function SetupFieldLabel({
   label,
@@ -129,6 +53,8 @@ function SetupTextField({
   onChange,
   required = true,
   optional = false,
+  valid,
+  invalidHelper,
 }: {
   label: string
   value: string
@@ -138,21 +64,38 @@ function SetupTextField({
   onChange: (nextValue: string) => void
   required?: boolean
   optional?: boolean
+  valid?: boolean
+  invalidHelper?: string
 }) {
   const inputId = useId()
+  const hasValue = value.trim().length > 0
+  const isInvalid = valid === false && hasValue
+  const isValid = valid === true && hasValue
+  const helperText = isInvalid ? invalidHelper ?? helper : helper
 
   return (
     <label className="setup-field" htmlFor={inputId}>
       <SetupFieldLabel label={label} optional={optional} required={required} />
-      <input
-        className="setup-input"
-        id={inputId}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        type={type}
-        value={value}
-      />
-      {helper ? <small className="setup-field__helper">{helper}</small> : null}
+      <span className="setup-field__control">
+        <input
+          className={`setup-input${isValid ? ' setup-input--valid setup-input--with-trailing' : ''}${isInvalid ? ' setup-input--invalid' : ''}`}
+          id={inputId}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          type={type}
+          value={value}
+        />
+        {isValid ? (
+          <span className="setup-field__trailing">
+            <CheckIcon className="setup-field__check" />
+          </span>
+        ) : null}
+      </span>
+      {helperText ? (
+        <small className={`setup-field__helper${isInvalid ? ' setup-field__helper--error' : ''}`}>
+          {helperText}
+        </small>
+      ) : null}
     </label>
   )
 }
@@ -162,11 +105,13 @@ function SetupSelectField({
   value,
   options,
   onChange,
+  placeholder,
 }: {
   label: string
   value: string
   options: string[]
   onChange: (nextValue: string) => void
+  placeholder?: string
 }) {
   const inputId = useId()
 
@@ -182,6 +127,11 @@ function SetupSelectField({
           onChange={(event) => onChange(event.target.value)}
           value={value}
         >
+          {placeholder ? (
+            <option disabled value="">
+              {placeholder}
+            </option>
+          ) : null}
           {options.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -272,22 +222,76 @@ function SetupSummaryCard({
   )
 }
 
+function isAccountStepValid(data: MerchantSetupData) {
+  return (
+    isNonEmpty(data.organizerName) &&
+    isNonEmpty(data.contactPerson) &&
+    isEmailValid(data.email) &&
+    isPhoneValid(data.phone) &&
+    isNonEmpty(data.businessType)
+  )
+}
+
+function isVerificationStepValid(data: MerchantSetupData) {
+  return isNonEmpty(data.governmentIdFileName)
+}
+
+function isPayoutStepValid(data: MerchantSetupData) {
+  const hasDestination =
+    data.payoutMethod === 'mobile-money'
+      ? isNonEmpty(data.network) && isPhoneValid(data.payoutPhone)
+      : isNonEmpty(data.bankName) &&
+        isNonEmpty(data.accountName) &&
+        isNonEmpty(data.accountNumber)
+
+  return hasDestination && isNonEmpty(data.settlementPreference) && data.agreedToPayoutTerms
+}
+
+function getHighestUnlockedStepIndex(data: MerchantSetupData) {
+  if (!isAccountStepValid(data)) {
+    return 0
+  }
+
+  if (!isVerificationStepValid(data)) {
+    return 1
+  }
+
+  if (!isPayoutStepValid(data)) {
+    return 2
+  }
+
+  return 3
+}
+
 export function MerchantSetupPage() {
   const navigate = useNavigate()
   const { step } = useParams<{ step: SetupStepKey }>()
   const [setupData, setSetupData] = useState<MerchantSetupData>(readStoredSetupData)
 
   const currentIndex = setupSteps.findIndex((entry) => entry.id === step)
+  const highestUnlockedStepIndex = getHighestUnlockedStepIndex(setupData)
 
   useEffect(() => {
-    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(setupData))
+    writeStoredSetupData(setupData)
   }, [setupData])
 
   if (currentIndex === -1 || !step) {
     return <Navigate replace to="/setup/account" />
   }
 
+  if (currentIndex > highestUnlockedStepIndex) {
+    return <Navigate replace to={`/setup/${setupSteps[highestUnlockedStepIndex].id}`} />
+  }
+
   const currentStep = setupSteps[currentIndex]
+  const isCurrentStepValid =
+    currentStep.id === 'account'
+      ? isAccountStepValid(setupData)
+      : currentStep.id === 'verification'
+        ? isVerificationStepValid(setupData)
+        : currentStep.id === 'payout'
+          ? isPayoutStepValid(setupData)
+          : setupData.agreesToCompliance
 
   function updateField<Key extends keyof MerchantSetupData>(
     field: Key,
@@ -322,7 +326,15 @@ export function MerchantSetupPage() {
   }
 
   function goForward() {
+    if (!isCurrentStepValid) {
+      return
+    }
+
     if (currentIndex === setupSteps.length - 1) {
+      writeStoredSetupData({
+        ...setupData,
+        agreesToCompliance: true,
+      })
       navigate('/overview')
       return
     }
@@ -460,24 +472,30 @@ export function MerchantSetupPage() {
                   value={setupData.contactPerson}
                 />
                 <SetupTextField
+                  helper="This will receive ticket sales notifications."
+                  invalidHelper="Enter a valid email address, like organizer@events.gh."
                   label="Email Address"
                   onChange={(value) => updateField('email', value)}
                   placeholder="organizer@events.gh"
                   type="email"
+                  valid={setupData.email.length === 0 ? undefined : isEmailValid(setupData.email)}
                   value={setupData.email}
                 />
                 <SetupTextField
-                  helper="Used for login, ticket support, and payout alerts."
+                  helper="Used for payout and security verification."
+                  invalidHelper="Enter a valid Ghana phone number, like 024 123 4567 or +233 24 123 4567."
                   label="Phone Number"
                   onChange={(value) => updateField('phone', value)}
                   placeholder="+233 24 123 4567"
                   type="tel"
+                  valid={setupData.phone.length === 0 ? undefined : isPhoneValid(setupData.phone)}
                   value={setupData.phone}
                 />
                 <SetupSelectField
                   label="Business Type"
                   onChange={(value) => updateField('businessType', value)}
                   options={businessTypeOptions}
+                  placeholder="Select business type"
                   value={setupData.businessType}
                 />
                 <SetupTextField
@@ -597,10 +615,17 @@ export function MerchantSetupPage() {
                       value={setupData.network}
                     />
                     <SetupTextField
+                      helper="We'll send settlements to this number."
+                      invalidHelper="Enter a valid Ghana mobile number for payouts."
                       label="Mobile Number"
                       onChange={(value) => updateField('payoutPhone', value)}
                       placeholder="+233 24 123 4567"
                       type="tel"
+                      valid={
+                        setupData.payoutPhone.length === 0
+                          ? undefined
+                          : isPhoneValid(setupData.payoutPhone)
+                      }
                       value={setupData.payoutPhone}
                     />
                   </>
@@ -684,7 +709,12 @@ export function MerchantSetupPage() {
                 <span>Back</span>
               </button>
             )}
-            <button className="setup-button setup-button--primary" onClick={goForward} type="button">
+            <button
+              className="setup-button setup-button--primary"
+              disabled={!isCurrentStepValid}
+              onClick={goForward}
+              type="button"
+            >
               <span>{currentStep.id === 'review' ? 'Submit for Approval' : 'Continue'}</span>
             </button>
           </footer>

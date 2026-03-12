@@ -36,57 +36,37 @@ import {
   UserPlusIcon,
   UsersIcon,
 } from '../components/ui/Icons'
+import {
+  formatEventDate,
+  formatRecurringSummary,
+  getStoredEvent,
+  type EventStatus,
+  type StoredEvent,
+} from '../lib/events'
 
-type EventId =
-  | 'afrochella-2026'
-  | 'ghana-tech-summit-2026'
-  | 'chale-wote-street-art-festival'
-  | 'detty-december-concert'
-  | 'panafest-2026'
-  | 'homowo-festival-concert'
+type EventId = string
 
 type EventShell = {
-  title: string
-  date: string
-  location: string
   tabs: string[]
 }
 
-const eventShells: Record<EventId, EventShell> = {
+const eventShells: Record<string, EventShell> = {
   'afrochella-2026': {
-    title: 'Afrochella 2026',
-    date: 'Dec 28, 2026',
-    location: 'El Wak Stadium, Accra',
     tabs: ['overview', 'orders', 'attendees', 'tickets', 'waitlist', 'check-in'],
   },
   'ghana-tech-summit-2026': {
-    title: 'Ghana Tech Summit 2026',
-    date: 'Aug 22, 2026',
-    location: 'Accra Intl. Conference Centre',
     tabs: ['overview', 'guestlist', 'capacity', 'waitlist', 'check-in'],
   },
   'chale-wote-street-art-festival': {
-    title: 'Chale Wote Street Art Festival',
-    date: 'Aug 20, 2026',
-    location: 'Jamestown, Accra',
     tabs: ['overview', 'guestlist'],
   },
   'detty-december-concert': {
-    title: 'Detty December Concert',
-    date: 'Dec 22, 2025',
-    location: 'Labadi Beach Hotel, Accra',
     tabs: ['overview'],
   },
   'panafest-2026': {
-    title: 'Panafest 2026',
-    date: 'Jul 25, 2026',
-    location: 'Cape Coast Castle, Cape Coast',
     tabs: ['overview'],
   },
   'homowo-festival-concert': {
-    title: 'Homowo Festival Concert',
-    date: 'Sep 10, 2026',
-    location: 'Black Star Square, Accra',
     tabs: ['overview'],
   },
 }
@@ -106,6 +86,49 @@ type SearchControls = {
   query: string
   searchValue: string
   onSearchChange: (value: string) => void
+}
+
+type DetailEvent = {
+  title: string
+  date: string
+  location: string
+  scheduleSummary: string | null
+  status: EventStatus
+  tabs: string[]
+}
+
+function getTabsForEvent(storedEvent: StoredEvent, eventId: string) {
+  const configuredTabs = eventShells[eventId]?.tabs
+
+  if (configuredTabs) {
+    return configuredTabs
+  }
+
+  if (storedEvent.eventType === 'paid') {
+    return ['overview', 'orders', 'attendees', 'tickets', 'waitlist', 'check-in']
+  }
+
+  if (storedEvent.eventType === 'rsvp') {
+    return ['overview', 'guestlist', 'capacity', 'waitlist', 'check-in']
+  }
+
+  return ['overview', 'guestlist']
+}
+
+function buildDetailEvent(storedEvent: StoredEvent, eventId: string): DetailEvent {
+  return {
+    title: storedEvent.title,
+    date: formatEventDate(storedEvent.startDate),
+    location: storedEvent.location,
+    scheduleSummary:
+      storedEvent.scheduleType === 'recurring' ? formatRecurringSummary(storedEvent) : null,
+    status: storedEvent.status,
+    tabs: getTabsForEvent(storedEvent, eventId),
+  }
+}
+
+function formatStatusLabel(status: EventStatus) {
+  return status === 'Live' ? 'Live now' : status
 }
 
 function matchesQuery(query: string, values: Array<string | number | undefined>) {
@@ -129,13 +152,26 @@ function ActionButton({
   icon,
   children,
   className = '',
+  to,
 }: {
   icon: ReactNode
   children: ReactNode
   className?: string
+  to?: string
 }) {
+  const classes = `surface-button surface-button--detail ${className}`.trim()
+
+  if (to) {
+    return (
+      <Link className={classes} to={to}>
+        {icon}
+        <span>{children}</span>
+      </Link>
+    )
+  }
+
   return (
-    <button className={`surface-button surface-button--detail ${className}`.trim()} type="button">
+    <button className={classes} type="button">
       {icon}
       <span>{children}</span>
     </button>
@@ -149,7 +185,7 @@ function DetailShell({
   children,
 }: {
   eventId: EventId
-  event: EventShell
+  event: DetailEvent
   tab: string
   children: ReactNode
 }) {
@@ -175,14 +211,22 @@ function DetailShell({
                   <MapPinIcon className="meta-icon" />
                   {event.location}
                 </span>
+                {event.scheduleSummary ? (
+                  <>
+                    <span className="detail-hero__dot" />
+                    <span>{event.scheduleSummary}</span>
+                  </>
+                ) : null}
               </div>
             </div>
-            <span className="live-badge">Live now</span>
+            <span className="live-badge">{formatStatusLabel(event.status)}</span>
           </div>
         </div>
 
         <div className="detail-hero__actions">
-          <ActionButton icon={<PlusIcon className="button-icon" />}>Edit Event</ActionButton>
+          <ActionButton icon={<PlusIcon className="button-icon" />} to={`/events/${eventId}/edit`}>
+            Edit Event
+          </ActionButton>
           <ActionButton icon={<UserPlusIcon className="button-icon" />}>Invite</ActionButton>
           <ActionButton icon={<ShareIcon className="button-icon" />}>Promote</ActionButton>
           <ActionButton icon={<UsersIcon className="button-icon" />}>Assign Promoters</ActionButton>
@@ -1246,10 +1290,11 @@ function renderTickets() {
 
 export function EventDetailPage() {
   const params = useParams()
-  const eventId = params.eventId as EventId | undefined
+  const eventId = params.eventId
   const [searchValues, setSearchValues] = useState<Record<string, string>>({})
 
-  const event = eventId ? eventShells[eventId] : undefined
+  const storedEvent = eventId ? getStoredEvent(eventId) : undefined
+  const event = eventId && storedEvent ? buildDetailEvent(storedEvent, eventId) : undefined
   const tab = event && params.tab && event.tabs.includes(params.tab) ? params.tab : event?.tabs[0]
   const searchKey = `${eventId ?? 'unknown'}:${tab ?? 'unknown'}`
   const searchValue = searchValues[searchKey] ?? ''

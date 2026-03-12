@@ -13,103 +13,9 @@ import {
   PlusIcon,
   SearchIcon,
 } from '../components/ui/Icons'
-
-type EventCard = {
-  title: string
-  slug: string
-  date: string
-  location: string
-  status: string
-  monetization: string
-  progressLabel: string
-  progressValue: string
-  progressRatio: number
-  footerLabel: string
-  footerValue: string
-}
+import { formatEventDate, formatRecurringSummary, readStoredEvents } from '../lib/events'
 
 type EventStatusFilter = 'All' | 'Live' | 'Draft' | 'Ended' | 'Cancelled'
-
-const cards: EventCard[] = [
-  {
-    title: 'Afrochella 2026',
-    slug: 'afrochella-2026',
-    date: 'Dec 28, 2026',
-    location: 'El Wak Stadium, Accra',
-    status: 'Live',
-    monetization: 'Paid',
-    progressLabel: 'Sales Progress',
-    progressValue: '1450 / 3000',
-    progressRatio: 0.49,
-    footerLabel: 'Revenue',
-    footerValue: 'GHC435,000',
-  },
-  {
-    title: 'Ghana Tech Summit 2026',
-    slug: 'ghana-tech-summit-2026',
-    date: 'Aug 22, 2026',
-    location: 'Accra International Conference Centre',
-    status: 'Live',
-    monetization: 'RSVP',
-    progressLabel: 'Registration Progress',
-    progressValue: '320 / 500',
-    progressRatio: 0.64,
-    footerLabel: 'Waitlist',
-    footerValue: '320 People',
-  },
-  {
-    title: 'Chale Wote Street Art Festival',
-    slug: 'chale-wote-street-art-festival',
-    date: 'Aug 20, 2026',
-    location: 'Jamestown, Accra',
-    status: 'Live',
-    monetization: 'Free',
-    progressLabel: 'Registration Progress',
-    progressValue: '185 / 500',
-    progressRatio: 0.37,
-    footerLabel: 'Registrations',
-    footerValue: '185 People',
-  },
-  {
-    title: 'Detty December Concert',
-    slug: 'detty-december-concert',
-    date: 'Dec 22, 2025',
-    location: 'Labadi Beach Hotel, Accra',
-    status: 'Ended',
-    monetization: 'Paid',
-    progressLabel: 'Sales Progress',
-    progressValue: '800 / 800',
-    progressRatio: 1,
-    footerLabel: 'Revenue',
-    footerValue: 'GHC192,000',
-  },
-  {
-    title: 'Panafest 2026',
-    slug: 'panafest-2026',
-    date: 'Jul 25, 2026',
-    location: 'Cape Coast Castle, Cape Coast',
-    status: 'Draft',
-    monetization: 'Paid',
-    progressLabel: 'Sales Progress',
-    progressValue: '0 / 400',
-    progressRatio: 0.01,
-    footerLabel: 'Revenue',
-    footerValue: 'GHC0',
-  },
-  {
-    title: 'Homowo Festival Concert',
-    slug: 'homowo-festival-concert',
-    date: 'Sep 10, 2026',
-    location: 'Black Star Square, Accra',
-    status: 'Cancelled',
-    monetization: 'Paid',
-    progressLabel: 'Sales Progress',
-    progressValue: '150 / 1000',
-    progressRatio: 0.15,
-    footerLabel: 'Revenue',
-    footerValue: 'GHC45,000',
-  },
-]
 
 function statusClass(value: string) {
   switch (value.toLowerCase()) {
@@ -127,12 +33,15 @@ function statusClass(value: string) {
       return 'event-card__badge--rsvp'
     case 'free':
       return 'event-card__badge--free'
+    case 'recurring':
+      return 'event-card__badge--recurring'
     default:
       return ''
   }
 }
 
 export function EventsManagementPage() {
+  const cards = readStoredEvents()
   const [statusFilter, setStatusFilter] = useState<EventStatusFilter>('All')
   const [searchValue, setSearchValue] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -142,7 +51,8 @@ export function EventsManagementPage() {
     const matchesStatus = statusFilter === 'All' || card.status === statusFilter
     const haystack = [
       card.title,
-      card.date,
+      formatEventDate(card.startDate),
+      formatRecurringSummary(card),
       card.location,
       card.status,
       card.monetization,
@@ -223,7 +133,7 @@ export function EventsManagementPage() {
 
       <section className={`events-grid${viewMode === 'list' ? ' events-grid--list' : ''}`}>
         {filteredCards.map((card) => (
-          <article key={card.title} className="event-card">
+          <article key={card.id} className="event-card">
             <div className="event-card__header">
               <div className="event-card__badges">
                 <span className={`event-card__badge ${statusClass(card.status)}`}>
@@ -232,18 +142,23 @@ export function EventsManagementPage() {
                 <span className={`event-card__badge ${statusClass(card.monetization)}`}>
                   {card.monetization}
                 </span>
+                {card.scheduleType === 'recurring' ? (
+                  <span className={`event-card__badge ${statusClass('recurring')}`}>
+                    Recurring
+                  </span>
+                ) : null}
               </div>
               <button className="icon-ghost-button" type="button">
                 <DotMenuIcon className="button-icon" />
               </button>
             </div>
 
-            <Link className="event-card__body" to={`/events/${card.slug}`}>
+            <Link className="event-card__body" to={`/events/${card.id}`}>
               <h2 className="event-card__title">{card.title}</h2>
               <div className="event-card__meta">
                 <span>
                   <CalendarIcon className="meta-icon" />
-                  {card.date}
+                  {formatEventDate(card.startDate)}
                 </span>
                 <span>
                   <MapPinIcon className="meta-icon" />

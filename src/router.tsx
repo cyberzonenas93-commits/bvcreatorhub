@@ -1,5 +1,7 @@
 import { Navigate, RouterProvider, createBrowserRouter } from 'react-router-dom'
 
+import { AffiliatePage } from './pages/AffiliatePage'
+import { ContactsPage } from './pages/ContactsPage'
 import { DashboardLayout } from './layouts/DashboardLayout'
 import { CreateEventPage } from './pages/CreateEventPage'
 import { EventDetailPage } from './pages/EventDetailPage'
@@ -7,16 +9,18 @@ import { EventsManagementPage } from './pages/EventsManagementPage'
 import { GetStartedPage } from './pages/GetStartedPage'
 import { MerchantSetupPage } from './pages/MerchantSetupPage'
 import { OverviewPage } from './pages/OverviewPage'
-import { PlaceholderPage } from './pages/PlaceholderPage'
+import { PaymentsPayoutsPage } from './pages/PaymentsPayoutsPage'
+import { SettingsDetailPage } from './pages/SettingsDetailPage'
+import { SettingsPage } from './pages/SettingsPage'
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate replace to="/setup/account" />,
+    element: <GetStartedPage />,
   },
   {
     path: 'auth',
-    element: <GetStartedPage />,
+    element: <Navigate replace to="/" />,
   },
   {
     path: 'setup',
@@ -42,6 +46,10 @@ const router = createBrowserRouter([
         element: <CreateEventPage />,
       },
       {
+        path: 'events/:eventId/edit',
+        element: <CreateEventPage />,
+      },
+      {
         path: 'events/:eventId',
         element: <EventDetailPage />,
       },
@@ -51,65 +59,29 @@ const router = createBrowserRouter([
       },
       {
         path: 'contacts',
-        element: (
-          <PlaceholderPage
-            title="Contacts"
-            description="Manage contact records and guest relationship workflows."
-            bullets={[
-              'Audience lists and tagging',
-              'Contact history and notes',
-              'Guest communication tools',
-            ]}
-          />
-        ),
+        element: <ContactsPage />,
       },
       {
         path: 'affiliate',
-        element: (
-          <PlaceholderPage
-            title="Affiliate"
-            description="Track promoter performance and referral-driven sales."
-            bullets={[
-              'Affiliate link reporting',
-              'Commission payouts',
-              'Partner leaderboard views',
-            ]}
-          />
-        ),
+        element: <AffiliatePage />,
       },
       {
         path: 'payouts',
-        element: (
-          <PlaceholderPage
-            title="Payments & Payouts"
-            description="Review settlements, payout schedules, and payment method performance."
-            bullets={[
-              'Settlement summaries',
-              'Payout status tracking',
-              'Payment channel reporting',
-            ]}
-          />
-        ),
+        element: <PaymentsPayoutsPage />,
       },
       {
         path: 'settings',
-        element: (
-          <PlaceholderPage
-            title="Settings"
-            description="Configure account preferences, payment rules, and team permissions."
-            bullets={[
-              'Organization profile settings',
-              'Team roles and access',
-              'Default event behavior',
-            ]}
-          />
-        ),
+        element: <SettingsPage />,
+      },
+      {
+        path: 'settings/:section',
+        element: <SettingsDetailPage />,
       },
     ],
   },
   {
     path: '*',
-    element: <Navigate replace to="/setup/account" />,
+    element: <Navigate replace to="/" />,
   },
 ])
 

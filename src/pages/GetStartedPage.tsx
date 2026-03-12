@@ -1,27 +1,24 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { logoIcon } from '../assets/figma'
 import { AuthField } from '../components/auth/AuthField'
 import { AuthModeSwitch } from '../components/auth/AuthModeSwitch'
 import { PasswordRequirements } from '../components/auth/PasswordRequirements'
 import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter'
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-function isEmailValid(email: string): boolean {
-  return email.length > 0 && EMAIL_REGEX.test(email)
-}
+import {
+  defaultSetupData,
+  isEmailValid,
+  isNonEmpty,
+  isPhoneValid,
+  writeStoredSetupData,
+} from '../lib/merchantSetup'
 
 function isPasswordValid(password: string): boolean {
   if (password.length < 8) return false
   if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)) return false
   if (!/\d/.test(password)) return false
   return true
-}
-
-function isNonEmpty(value: string): boolean {
-  return value.trim().length > 0
 }
 
 type AuthMode = 'signup' | 'login'
@@ -48,6 +45,7 @@ function EyeIcon() {
 }
 
 export function GetStartedPage() {
+  const navigate = useNavigate()
   const [mode, setMode] = useState<AuthMode>('signup')
 
   const [signup, setSignup] = useState({
@@ -62,6 +60,39 @@ export function GetStartedPage() {
     email: '',
     password: '',
   })
+
+  const isSignupValid =
+    isNonEmpty(signup.businessName) &&
+    isNonEmpty(signup.contactPerson) &&
+    isPhoneValid(signup.phone) &&
+    isEmailValid(signup.email) &&
+    isPasswordValid(signup.password)
+
+  const isLoginValid = isEmailValid(login.email) && isNonEmpty(login.password)
+
+  function handleCreateAccount() {
+    if (!isSignupValid) {
+      return
+    }
+
+    writeStoredSetupData({
+      ...defaultSetupData,
+      organizerName: signup.businessName,
+      contactPerson: signup.contactPerson,
+      email: signup.email,
+      phone: signup.phone,
+    })
+
+    navigate('/setup/account')
+  }
+
+  function handleLogin() {
+    if (!isLoginValid) {
+      return
+    }
+
+    navigate('/overview')
+  }
 
   return (
     <main className="auth-page">
@@ -106,16 +137,24 @@ export function GetStartedPage() {
                 <AuthField
                   label="Phone Number"
                   placeholder="024 123 4567"
-                  helper="Used for account security and payout notifications"
+                  helper={
+                    signup.phone.length > 0 && !isPhoneValid(signup.phone)
+                      ? 'Enter a valid Ghana phone number, like 024 123 4567 or +233 24 123 4567.'
+                      : 'Used for account security and payout notifications'
+                  }
                   value={signup.phone}
                   onChange={(v) => setSignup((s) => ({ ...s, phone: v }))}
-                  valid={isNonEmpty(signup.phone)}
+                  valid={isPhoneValid(signup.phone)}
                 />
                 <AuthField
                   label="Email Address"
                   placeholder="your@email.com"
                   type="email"
-                  helper="We'll send event updates and important notifications here"
+                  helper={
+                    signup.email.length > 0 && !isEmailValid(signup.email)
+                      ? 'Enter a valid email address, like organizer@events.gh.'
+                      : "We'll send event updates and important notifications here"
+                  }
                   value={signup.email}
                   onChange={(v) => setSignup((s) => ({ ...s, email: v }))}
                   valid={isEmailValid(signup.email)}
@@ -133,7 +172,12 @@ export function GetStartedPage() {
                 <PasswordRequirements />
 
                 <div className="auth-actions">
-                  <button className="auth-button auth-button--primary" type="button">
+                  <button
+                    className="auth-button auth-button--primary"
+                    disabled={!isSignupValid}
+                    onClick={handleCreateAccount}
+                    type="button"
+                  >
                     Create Account
                   </button>
                   <Link className="auth-button auth-button--secondary" to="/overview">
@@ -147,7 +191,11 @@ export function GetStartedPage() {
                   label="Email Address"
                   placeholder="your@email.com"
                   type="email"
-                  helper="Use the same email tied to your merchant account"
+                  helper={
+                    login.email.length > 0 && !isEmailValid(login.email)
+                      ? 'Enter the email in a valid format, like your@email.com.'
+                      : 'Use the same email tied to your merchant account'
+                  }
                   value={login.email}
                   onChange={(v) => setLogin((s) => ({ ...s, email: v }))}
                   valid={isEmailValid(login.email)}
@@ -163,7 +211,12 @@ export function GetStartedPage() {
                 />
 
                 <div className="auth-actions">
-                  <button className="auth-button auth-button--primary" type="button">
+                  <button
+                    className="auth-button auth-button--primary"
+                    disabled={!isLoginValid}
+                    onClick={handleLogin}
+                    type="button"
+                  >
                     Login
                   </button>
                   <Link className="auth-button auth-button--secondary" to="/overview">

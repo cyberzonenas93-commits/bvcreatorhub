@@ -38,6 +38,9 @@ export function AuthField({
   onChange,
   valid,
 }: AuthFieldProps) {
+  const hasValue = value.length > 0
+  const isInvalid = valid === false && hasValue
+
   return (
     <label className="auth-field">
       <span className="auth-field__label">
@@ -50,14 +53,18 @@ export function AuthField({
           type={type}
           value={value}
           onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-          aria-invalid={valid === false && value.length > 0 ? true : undefined}
+          aria-invalid={isInvalid ? true : undefined}
         />
         <span className="auth-field__trailing">
           {valid === true ? <CheckIcon /> : null}
           {trailing ?? null}
         </span>
       </span>
-      {helper ? <span className="auth-field__helper">{helper}</span> : null}
+      {helper ? (
+        <span className={`auth-field__helper${isInvalid ? ' auth-field__helper--error' : ''}`}>
+          {helper}
+        </span>
+      ) : null}
     </label>
   )
 }

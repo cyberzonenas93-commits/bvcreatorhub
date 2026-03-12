@@ -409,3 +409,39 @@ export function ShieldCheckIcon(props: IconProps) {
     </Svg>
   )
 }
+
+export function XIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m6 6 12 12M18 6 6 18" />
+    </Svg>
+  )
+}
+
+export function InfoIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 10v5M12 7h.01" />
+    </Svg>
+  )
+}
+
+export function WalletIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1H6a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" />
+      <rect x="13" y="10" width="7" height="6" rx="1.5" />
+      <circle cx="16" cy="13" r="0.8" fill="currentColor" stroke="none" />
+    </Svg>
+  )
+}
+
+export function CopyIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="9" y="9" width="10" height="10" rx="2" />
+      <path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1" />
+    </Svg>
+  )
+}
