@@ -11,6 +11,7 @@ import {
   DocumentIcon,
   ImageIcon,
   ShieldCheckIcon,
+  UploadIcon,
 } from '../components/ui/Icons'
 import {
   businessTypeOptions,
@@ -233,7 +234,15 @@ function isAccountStepValid(data: MerchantSetupData) {
 }
 
 function isVerificationStepValid(data: MerchantSetupData) {
-  return isNonEmpty(data.governmentIdFileName)
+  if (!isNonEmpty(data.governmentIdFileName)) {
+    return false
+  }
+
+  if (data.isRegisteredBusiness === 'yes') {
+    return isNonEmpty(data.businessRegistrationNumber)
+  }
+
+  return true
 }
 
 function isPayoutStepValid(data: MerchantSetupData) {
@@ -266,7 +275,9 @@ function getHighestUnlockedStepIndex(data: MerchantSetupData) {
 export function MerchantSetupPage() {
   const navigate = useNavigate()
   const { step } = useParams<{ step: SetupStepKey }>()
+  const logoUploadId = useId()
   const [setupData, setSetupData] = useState<MerchantSetupData>(readStoredSetupData)
+  const [isSubmitted, setIsSubmitted] = useState(false)
 
   const currentIndex = setupSteps.findIndex((entry) => entry.id === step)
   const highestUnlockedStepIndex = getHighestUnlockedStepIndex(setupData)
@@ -293,6 +304,54 @@ export function MerchantSetupPage() {
           ? isPayoutStepValid(setupData)
           : setupData.agreesToCompliance
 
+  if (isSubmitted) {
+    const payoutDestination =
+      setupData.payoutMethod === 'mobile-money' ? setupData.network : setupData.bankName
+
+    return (
+      <main className="setup-page">
+        <div className="setup-shell setup-shell--success">
+          <section className="setup-card setup-card--success">
+            <div className="setup-success">
+              <span className="setup-success__icon">
+                <ShieldCheckIcon className="button-icon" />
+              </span>
+              <span className="setup-success__badge">Under Review</span>
+              <h1>You&apos;re Almost Live</h1>
+              <p>
+                Your account is under review. You&apos;ll receive approval within 24
+                hours.
+              </p>
+
+              <div className="setup-success__summary">
+                <div>
+                  <span>Organizer</span>
+                  <strong>{setupData.organizerName}</strong>
+                </div>
+                <div>
+                  <span>Verification</span>
+                  <strong>Documents submitted</strong>
+                </div>
+                <div>
+                  <span>Payout method</span>
+                  <strong>{payoutDestination}</strong>
+                </div>
+              </div>
+
+              <button
+                className="setup-button setup-button--primary"
+                onClick={() => navigate('/dashboard')}
+                type="button"
+              >
+                <span>Continue to Dashboard</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      </main>
+    )
+  }
+
   function updateField<Key extends keyof MerchantSetupData>(
     field: Key,
     value: MerchantSetupData[Key],
@@ -303,9 +362,28 @@ export function MerchantSetupPage() {
     }))
   }
 
-  function handleFileChange(field: 'logoFileName' | 'governmentIdFileName' | 'selfieFileName') {
+  function handleLogoFile(file: File | null) {
+    if (!file || !file.type.startsWith('image/')) {
+      return
+    }
+
+    updateField('logoFileName', file.name)
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        return
+      }
+
+      updateField('logoImageUrl', reader.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function handleFileChange(field: 'governmentIdFileName' | 'selfieFileName') {
     return (event: ChangeEvent<HTMLInputElement>) => {
-      const fileName = event.target.files?.[0]?.name ?? ''
+      const file = event.target.files?.[0] ?? null
+      const fileName = file?.name ?? ''
 
       if (fileName) {
         updateField(field, fileName)
@@ -331,11 +409,14 @@ export function MerchantSetupPage() {
     }
 
     if (currentIndex === setupSteps.length - 1) {
-      writeStoredSetupData({
+      const submittedSetupData = {
         ...setupData,
         agreesToCompliance: true,
-      })
-      navigate('/overview')
+      }
+
+      writeStoredSetupData(submittedSetupData)
+      setSetupData(submittedSetupData)
+      setIsSubmitted(true)
       return
     }
 
@@ -367,6 +448,10 @@ export function MerchantSetupPage() {
           ? 'Registered Business'
           : 'Individual Organizer',
     },
+    ...(setupData.businessRegistrationNumber
+      ? [{ label: 'Registration Number', value: setupData.businessRegistrationNumber }]
+      : []),
+    ...(setupData.tinNumber ? [{ label: 'TIN', value: setupData.tinNumber }] : []),
   ] as const
 
   const payoutSummaryRows =
@@ -507,14 +592,28 @@ export function MerchantSetupPage() {
                   required={false}
                   value={setupData.instagram}
                 />
-                <SetupUploadField
-                  buttonLabel="Upload Logo"
-                  fileName={setupData.logoFileName}
-                  helper="Appears on your event pages."
-                  icon="image"
-                  label="Logo Upload"
-                  onChange={handleFileChange('logoFileName')}
-                />
+                <div className="setup-field">
+                  <span className="setup-field__label">Logo Upload</span>
+                  <input
+                    accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                    className="sr-only"
+                    id={logoUploadId}
+                    onChange={(event) => {
+                      handleLogoFile(event.target.files?.[0] ?? null)
+                      event.target.value = ''
+                    }}
+                    type="file"
+                  />
+                  <label className="setup-upload setup-upload--single" htmlFor={logoUploadId}>
+                    <span className="setup-upload__icon">
+                      <UploadIcon className="button-icon" />
+                    </span>
+                    <span className="setup-upload__single">
+                      {setupData.logoFileName || 'Upload Logo'}
+                    </span>
+                  </label>
+                  <small className="setup-field__helper">Appears on your event pages.</small>
+                </div>
               </>
             ) : null}
 
@@ -534,7 +633,7 @@ export function MerchantSetupPage() {
                     <SetupUploadField
                       buttonLabel="Upload Selfie"
                       fileName={setupData.selfieFileName}
-                      helper="Helps us verify ownership."
+                      helper="Helps speed up approval."
                       icon="image"
                       label="Optional Selfie Upload"
                       onChange={handleFileChange('selfieFileName')}
@@ -565,17 +664,30 @@ export function MerchantSetupPage() {
                       </button>
                     </div>
                   </div>
-                  <div className="setup-inline-note">
-                    <span>
-                      We&apos;ll register you as an{' '}
-                      <strong>
-                        {setupData.isRegisteredBusiness === 'yes'
-                          ? 'Official Business'
-                          : 'Individual Organizer'}
-                      </strong>
-                      .
-                    </span>
-                  </div>
+                  {setupData.isRegisteredBusiness === 'yes' ? (
+                    <div className="setup-section__stack">
+                      <SetupTextField
+                        label="Business Registration Number"
+                        onChange={(value) => updateField('businessRegistrationNumber', value)}
+                        placeholder="Enter registration number"
+                        value={setupData.businessRegistrationNumber}
+                      />
+                      <SetupTextField
+                        label="TIN"
+                        onChange={(value) => updateField('tinNumber', value)}
+                        optional
+                        placeholder="Enter TIN"
+                        required={false}
+                        value={setupData.tinNumber}
+                      />
+                    </div>
+                  ) : (
+                    <div className="setup-inline-note">
+                      <span>
+                        We&apos;ll register you as an <strong>Individual Organizer</strong>.
+                      </span>
+                    </div>
+                  )}
                   <div className="setup-status-note">
                     <ShieldCheckIcon className="button-icon" />
                     <span>Verification typically takes less than 24 hours.</span>
@@ -665,7 +777,7 @@ export function MerchantSetupPage() {
                     <span>Service Fee Agreement</span>
                   </div>
                   <p>
-                    Black Volta charges <strong>2.5%</strong> per ticket sold.
+                    BlacVolta charges <strong>2.5%</strong> per ticket sold.
                   </p>
                   <label className="setup-check">
                     <input

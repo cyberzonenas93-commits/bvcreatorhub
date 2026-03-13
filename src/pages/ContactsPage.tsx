@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import {
   DocumentIcon,
@@ -10,7 +10,15 @@ import {
   UsersIcon,
 } from '../components/ui/Icons'
 import { DashboardModal } from '../components/dashboard/Modal'
-import { createContactId, readStoredContacts, type ContactRecord, type ContactSegment, writeStoredContacts } from '../lib/contacts'
+import {
+  createContactAvatarUrl,
+  createContactId,
+  readStoredContacts,
+  type ContactAvatarKind,
+  type ContactRecord,
+  type ContactSegment,
+  writeStoredContacts,
+} from '../lib/contacts'
 import { isEmailValid, isNonEmpty, isPhoneValid } from '../lib/merchantSetup'
 
 type ContactFilter = 'all' | 'VIP' | 'Regular' | 'recent'
@@ -23,6 +31,8 @@ type ContactFormState = {
   totalSpent: string
   segment: ContactSegment
   note: string
+  avatarUrl: string
+  avatarKind: ContactAvatarKind
 }
 
 const pageSize = 5
@@ -66,6 +76,8 @@ function emptyForm(): ContactFormState {
     totalSpent: '0',
     segment: 'Regular',
     note: '',
+    avatarUrl: '',
+    avatarKind: 'generated',
   }
 }
 
@@ -78,7 +90,31 @@ function formFromContact(contact: ContactRecord): ContactFormState {
     totalSpent: String(contact.totalSpent),
     segment: contact.segment,
     note: contact.note,
+    avatarUrl: contact.avatarUrl,
+    avatarKind: contact.avatarKind,
   }
+}
+
+function ContactAvatar({
+  avatarUrl,
+  className,
+  fallback,
+  name,
+}: {
+  avatarUrl: string
+  className: string
+  fallback: string
+  name: string
+}) {
+  if (!avatarUrl) {
+    return <span className={className}>{fallback}</span>
+  }
+
+  return (
+    <span className={`${className} ${className}--image`}>
+      <img alt={`${name} avatar`} src={avatarUrl} />
+    </span>
+  )
 }
 
 export function ContactsPage() {
@@ -91,6 +127,7 @@ export function ContactsPage() {
   const [form, setForm] = useState<ContactFormState>(emptyForm)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [selectedContact, setSelectedContact] = useState<ContactRecord | null>(null)
+  const avatarInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     writeStoredContacts(contacts)
@@ -124,6 +161,10 @@ export function ContactsPage() {
     isEmailValid(form.email) &&
     isPhoneValid(form.phone) &&
     Number.isFinite(Number(form.totalSpent))
+  const previewAvatarUrl =
+    form.avatarKind === 'uploaded' && form.avatarUrl
+      ? form.avatarUrl
+      : createContactAvatarUrl(form.name.trim() || 'Contact')
 
   function openAddModal() {
     setEditingId(null)
@@ -143,14 +184,48 @@ export function ContactsPage() {
     setForm(emptyForm())
   }
 
+  function handleAvatarUpload(file: File | null) {
+    if (!file || !file.type.startsWith('image/')) {
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        return
+      }
+
+      setForm((current) => ({
+        ...current,
+        avatarUrl: reader.result as string,
+        avatarKind: 'uploaded',
+      }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function resetAvatar() {
+    setForm((current) => ({
+      ...current,
+      avatarUrl: '',
+      avatarKind: 'generated',
+    }))
+  }
+
   function saveContact() {
     if (!isFormValid) {
       return
     }
 
+    const trimmedName = form.name.trim()
+    const avatarUrl =
+      form.avatarKind === 'uploaded' && form.avatarUrl
+        ? form.avatarUrl
+        : createContactAvatarUrl(trimmedName)
+    const avatarKind = form.avatarKind === 'uploaded' && form.avatarUrl ? 'uploaded' : 'generated'
     const nextContact: ContactRecord = {
       id: editingId ?? createContactId(form.name),
-      name: form.name.trim(),
+      name: trimmedName,
       email: form.email.trim(),
       phone: form.phone.trim(),
       totalSpent: Number(form.totalSpent),
@@ -158,6 +233,8 @@ export function ContactsPage() {
       segment: form.segment,
       updatedAt: '2026-03-12',
       note: form.note.trim(),
+      avatarUrl,
+      avatarKind,
     }
 
     setContacts((current) => {
@@ -273,7 +350,12 @@ export function ContactsPage() {
               <tr key={contact.id}>
                 <td>
                   <div className="person-cell">
-                    <span className="avatar-chip">{initialsFromName(contact.name)}</span>
+                    <ContactAvatar
+                      avatarUrl={contact.avatarUrl}
+                      className="avatar-chip"
+                      fallback={initialsFromName(contact.name)}
+                      name={contact.name}
+                    />
                     <div className="name-stack">
                       <strong>{contact.name}</strong>
                       <span>{contact.phone}</span>
@@ -349,6 +431,48 @@ export function ContactsPage() {
           title={editingId ? 'Edit Contact' : 'Add Contact'}
         >
           <div className="modal-form-grid">
+            <div className="form-field form-field--full contact-avatar-field">
+              <span>Profile Picture</span>
+              <div className="contact-avatar-field__body">
+                <ContactAvatar
+                  avatarUrl={previewAvatarUrl}
+                  className="contact-avatar-preview"
+                  fallback={initialsFromName(form.name)}
+                  name={form.name || 'Contact'}
+                />
+                <div className="contact-avatar-field__actions">
+                  <input
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    className="sr-only"
+                    onChange={(event) => {
+                      handleAvatarUpload(event.target.files?.[0] ?? null)
+                      event.target.value = ''
+                    }}
+                    ref={avatarInputRef}
+                    type="file"
+                  />
+                  <div className="contact-avatar-field__buttons">
+                    <button
+                      className="surface-button surface-button--wide"
+                      onClick={() => avatarInputRef.current?.click()}
+                      type="button"
+                    >
+                      {form.avatarKind === 'uploaded' ? 'Change Picture' : 'Upload Picture'}
+                    </button>
+                    {form.avatarKind === 'uploaded' ? (
+                      <button
+                        className="surface-button surface-button--wide"
+                        onClick={resetAvatar}
+                        type="button"
+                      >
+                        Use Generated Avatar
+                      </button>
+                    ) : null}
+                  </div>
+                  <small>Upload a JPG, PNG, WebP, or GIF image.</small>
+                </div>
+              </div>
+            </div>
             <label className="form-field">
               <span>Full Name</span>
               <input onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} value={form.name} />
@@ -392,6 +516,18 @@ export function ContactsPage() {
           onClose={() => setSelectedContact(null)}
           title={selectedContact.name}
         >
+          <div className="contact-detail-head">
+            <ContactAvatar
+              avatarUrl={selectedContact.avatarUrl}
+              className="contact-avatar-preview"
+              fallback={initialsFromName(selectedContact.name)}
+              name={selectedContact.name}
+            />
+            <div className="contact-detail-head__copy">
+              <strong>{selectedContact.name}</strong>
+              <span>{selectedContact.status}</span>
+            </div>
+          </div>
           <div className="detail-summary-card">
             <div>
               <span>Email</span>

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 
 import { Link, NavLink, Navigate, useParams } from 'react-router-dom'
 
+import { DashboardModal } from '../components/dashboard/Modal'
 import {
   ArrowLeftIcon,
   BanIcon,
@@ -131,6 +132,14 @@ function formatStatusLabel(status: EventStatus) {
   return status === 'Live' ? 'Live now' : status
 }
 
+function normalizeEventTab(tab: string | undefined) {
+  if (tab === 'dashboard') {
+    return 'overview'
+  }
+
+  return tab
+}
+
 function matchesQuery(query: string, values: Array<string | number | undefined>) {
   if (query.length === 0) {
     return true
@@ -153,11 +162,13 @@ function ActionButton({
   children,
   className = '',
   to,
+  onClick,
 }: {
   icon: ReactNode
   children: ReactNode
   className?: string
   to?: string
+  onClick?: () => void
 }) {
   const classes = `surface-button surface-button--detail ${className}`.trim()
 
@@ -171,7 +182,7 @@ function ActionButton({
   }
 
   return (
-    <button className={classes} type="button">
+    <button className={classes} onClick={onClick} type="button">
       {icon}
       <span>{children}</span>
     </button>
@@ -183,11 +194,17 @@ function DetailShell({
   event,
   tab,
   children,
+  onInvite,
+  onPromote,
+  onAssignPromoters,
 }: {
   eventId: EventId
   event: DetailEvent
   tab: string
   children: ReactNode
+  onInvite: () => void
+  onPromote: () => void
+  onAssignPromoters: () => void
 }) {
   return (
     <div className="dashboard-page detail-page">
@@ -227,9 +244,9 @@ function DetailShell({
           <ActionButton icon={<PlusIcon className="button-icon" />} to={`/events/${eventId}/edit`}>
             Edit Event
           </ActionButton>
-          <ActionButton icon={<UserPlusIcon className="button-icon" />}>Invite</ActionButton>
-          <ActionButton icon={<ShareIcon className="button-icon" />}>Promote</ActionButton>
-          <ActionButton icon={<UsersIcon className="button-icon" />}>Assign Promoters</ActionButton>
+          <ActionButton icon={<UserPlusIcon className="button-icon" />} onClick={onInvite}>Invite</ActionButton>
+          <ActionButton icon={<ShareIcon className="button-icon" />} onClick={onPromote}>Promote</ActionButton>
+          <ActionButton icon={<UsersIcon className="button-icon" />} onClick={onAssignPromoters}>Assign Promoters</ActionButton>
         </div>
       </section>
 
@@ -1117,7 +1134,7 @@ function renderOrders(search: SearchControls) {
   )
 }
 
-function renderTickets() {
+function renderTickets(onCreatePromoCode: () => void) {
   const metrics = [
     { icon: <DollarIcon className="button-icon" />, label: 'Total Revenue', value: 'GHC592,500' },
     { icon: <TicketIcon className="button-icon" />, label: 'Tickets Sold', value: '1,925 / 2,700' },
@@ -1177,7 +1194,7 @@ function renderTickets() {
           <p>Manage pricing, inventory, and sales windows for your event.</p>
         </div>
         <div className="detail-toolbar__actions">
-          <button className="surface-button surface-button--wide" type="button">
+          <button className="surface-button surface-button--wide" onClick={onCreatePromoCode} type="button">
             <TagIcon className="button-icon" />
             <span>Create Promo Code</span>
           </button>
@@ -1267,7 +1284,7 @@ function renderTickets() {
             <h3>Promo Codes</h3>
             <p>Create discounts and special offers for your attendees.</p>
           </div>
-          <button className="surface-button surface-button--wide" type="button">
+          <button className="surface-button surface-button--wide" onClick={onCreatePromoCode} type="button">
             <span>Manage Coupons</span>
           </button>
         </article>
@@ -1292,10 +1309,21 @@ export function EventDetailPage() {
   const params = useParams()
   const eventId = params.eventId
   const [searchValues, setSearchValues] = useState<Record<string, string>>({})
+  const [activeModal, setActiveModal] = useState<'invite' | 'promote' | 'assign' | 'promo' | null>(null)
+  const [inviteValue, setInviteValue] = useState('')
+  const [promoCode, setPromoCode] = useState('AFRO10')
+  const [promoDiscount, setPromoDiscount] = useState('10')
+  const [promoterName, setPromoterName] = useState('Kwame Osei')
+  const [promoterEmail, setPromoterEmail] = useState('kwame.osei@promoter.gh')
+  const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null)
 
   const storedEvent = eventId ? getStoredEvent(eventId) : undefined
   const event = eventId && storedEvent ? buildDetailEvent(storedEvent, eventId) : undefined
-  const tab = event && params.tab && event.tabs.includes(params.tab) ? params.tab : event?.tabs[0]
+  const requestedTab = normalizeEventTab(params.tab)
+  const tab =
+    event && requestedTab && event.tabs.includes(requestedTab)
+      ? requestedTab
+      : event?.tabs[0]
   const searchKey = `${eventId ?? 'unknown'}:${tab ?? 'unknown'}`
   const searchValue = searchValues[searchKey] ?? ''
   const deferredSearch = useDeferredValue(searchValue.trim().toLowerCase())
@@ -1331,15 +1359,167 @@ export function EventDetailPage() {
       case 'orders':
         return renderOrders(search)
       case 'tickets':
-        return renderTickets()
+        return renderTickets(() => setActiveModal('promo'))
       default:
         return renderOverview(eventId)
     }
   })()
 
   return (
-    <DetailShell eventId={eventId} event={event} tab={tab}>
-      {content}
-    </DetailShell>
+    <>
+      <DetailShell
+        event={event}
+        eventId={eventId}
+        onAssignPromoters={() => setActiveModal('assign')}
+        onInvite={() => setActiveModal('invite')}
+        onPromote={() => setActiveModal('promote')}
+        tab={tab}
+      >
+        {content}
+      </DetailShell>
+
+      {activeModal === 'invite' ? (
+        <DashboardModal
+          footer={
+            <>
+              <button className="surface-button surface-button--wide" onClick={() => setActiveModal(null)} type="button">
+                Cancel
+              </button>
+              <button
+                className="page-primary-cta page-primary-cta--compact"
+                onClick={() => {
+                  setActiveModal(null)
+                  setConfirmationMessage('Invitation link prepared.')
+                  window.location.href = `mailto:?subject=${encodeURIComponent(`Invitation to ${event.title}`)}&body=${encodeURIComponent(`Join ${event.title}: ${inviteValue || 'guest@example.com'}`)}`
+                }}
+                type="button"
+              >
+                Send Invite
+              </button>
+            </>
+          }
+          onClose={() => setActiveModal(null)}
+          title="Invite Guests"
+        >
+          <label className="form-field form-field--full">
+            <span>Email Address</span>
+            <input onChange={(inputEvent) => setInviteValue(inputEvent.target.value)} placeholder="guest@email.com" value={inviteValue} />
+          </label>
+        </DashboardModal>
+      ) : null}
+
+      {activeModal === 'promote' ? (
+        <DashboardModal
+          footer={
+            <>
+              <button className="surface-button surface-button--wide" onClick={() => setActiveModal(null)} type="button">
+                Cancel
+              </button>
+              <button
+                className="page-primary-cta page-primary-cta--compact"
+                onClick={() => {
+                  navigator.clipboard.writeText(`https://events.blackvolta.com/${eventId}`)
+                  setActiveModal(null)
+                  setConfirmationMessage('Promotional event link copied.')
+                }}
+                type="button"
+              >
+                Copy Event Link
+              </button>
+            </>
+          }
+          onClose={() => setActiveModal(null)}
+          title="Promote Event"
+        >
+          <p className="dashboard-modal__copy">
+            Copy your live event link and share it across email, socials, or partner channels.
+          </p>
+          <label className="form-field form-field--full">
+            <span>Share Link</span>
+            <input readOnly value={`https://events.blackvolta.com/${eventId}`} />
+          </label>
+        </DashboardModal>
+      ) : null}
+
+      {activeModal === 'assign' ? (
+        <DashboardModal
+          footer={
+            <>
+              <button className="surface-button surface-button--wide" onClick={() => setActiveModal(null)} type="button">
+                Cancel
+              </button>
+              <button
+                className="page-primary-cta page-primary-cta--compact"
+                onClick={() => {
+                  setActiveModal(null)
+                  setConfirmationMessage(`Promoter assigned to ${event.title}.`)
+                }}
+                type="button"
+              >
+                Assign Promoter
+              </button>
+            </>
+          }
+          onClose={() => setActiveModal(null)}
+          title="Assign Promoter"
+        >
+          <div className="modal-form-grid">
+            <label className="form-field">
+              <span>Promoter Name</span>
+              <input onChange={(inputEvent) => setPromoterName(inputEvent.target.value)} value={promoterName} />
+            </label>
+            <label className="form-field">
+              <span>Email Address</span>
+              <input onChange={(inputEvent) => setPromoterEmail(inputEvent.target.value)} value={promoterEmail} />
+            </label>
+          </div>
+        </DashboardModal>
+      ) : null}
+
+      {activeModal === 'promo' ? (
+        <DashboardModal
+          footer={
+            <>
+              <button className="surface-button surface-button--wide" onClick={() => setActiveModal(null)} type="button">
+                Cancel
+              </button>
+              <button
+                className="page-primary-cta page-primary-cta--compact"
+                onClick={() => {
+                  setActiveModal(null)
+                  setConfirmationMessage(`Promo code ${promoCode.toUpperCase()} saved.`)
+                }}
+                type="button"
+              >
+                Save Promo Code
+              </button>
+            </>
+          }
+          onClose={() => setActiveModal(null)}
+          title="Create Promo Code"
+        >
+          <div className="modal-form-grid">
+            <label className="form-field">
+              <span>Promo Code</span>
+              <input onChange={(inputEvent) => setPromoCode(inputEvent.target.value.toUpperCase())} value={promoCode} />
+            </label>
+            <label className="form-field">
+              <span>Discount (%)</span>
+              <input onChange={(inputEvent) => setPromoDiscount(inputEvent.target.value)} value={promoDiscount} />
+            </label>
+          </div>
+        </DashboardModal>
+      ) : null}
+
+      {confirmationMessage ? (
+        <DashboardModal
+          footer={<button className="page-primary-cta page-primary-cta--compact" onClick={() => setConfirmationMessage(null)} type="button">Done</button>}
+          onClose={() => setConfirmationMessage(null)}
+          title="Configured"
+        >
+          <p className="dashboard-modal__copy">{confirmationMessage}</p>
+        </DashboardModal>
+      ) : null}
+    </>
   )
 }

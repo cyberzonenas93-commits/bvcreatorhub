@@ -8,11 +8,15 @@ export interface MerchantSetupData {
   email: string
   phone: string
   businessType: string
+  businessAddress: string
   instagram: string
   logoFileName: string
+  logoImageUrl: string
   governmentIdFileName: string
   selfieFileName: string
   isRegisteredBusiness: RegisteredBusiness
+  businessRegistrationNumber: string
+  tinNumber: string
   payoutMethod: PayoutMethod
   bankName: string
   accountName: string
@@ -35,17 +39,19 @@ export const setupSteps = [
 
 export const businessTypeOptions = [
   'Event Organizer',
-  'Festival Producer',
-  'Venue Operator',
-  'Community Brand',
+  'Venue',
+  'Promoter',
+  'Festival',
+  'Corporate Host',
+  'Community / Club',
 ]
 
 export const networkOptions = ['MTN Mobile Money', 'Telecel Cash', 'AirtelTigo Money']
 
 export const settlementOptions = [
   'After event ends',
-  'Daily settlement',
-  'Weekly settlement',
+  'Weekly rolling settlement',
+  'Custom (subject to approval)',
 ]
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -56,11 +62,15 @@ export const defaultSetupData: MerchantSetupData = {
   email: '',
   phone: '',
   businessType: '',
+  businessAddress: '',
   instagram: '',
   logoFileName: '',
+  logoImageUrl: '',
   governmentIdFileName: '',
   selfieFileName: '',
   isRegisteredBusiness: 'no',
+  businessRegistrationNumber: '',
+  tinNumber: '',
   payoutMethod: 'mobile-money',
   bankName: '',
   accountName: '',

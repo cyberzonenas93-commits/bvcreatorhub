@@ -1,7 +1,7 @@
-import { stats } from '../../data/dashboard'
+import type { Stat } from '../../data/dashboard'
 import { StatCard } from './StatCard'
 
-export function StatsGrid() {
+export function StatsGrid({ stats }: { stats: Stat[] }) {
   return (
     <section className="stats-grid" aria-label="Key metrics">
       {stats.map((stat) => (

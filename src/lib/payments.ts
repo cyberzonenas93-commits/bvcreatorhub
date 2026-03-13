@@ -14,6 +14,7 @@ export interface TransactionRecord {
 export interface PayoutRecord {
   id: string
   beneficiary: string
+  destination: string
   method: string
   requestedOn: string
   status: PayoutStatus
@@ -80,6 +81,7 @@ const defaultPayments: PaymentsData = {
     {
       id: 'pay-01',
       beneficiary: 'MTN Mobile Money',
+      destination: '+233 24 555 1234',
       method: 'Mobile Money',
       requestedOn: '11 Mar, 2026',
       status: 'Processing',
@@ -89,6 +91,7 @@ const defaultPayments: PaymentsData = {
     {
       id: 'pay-02',
       beneficiary: 'GCB Bank',
+      destination: 'GCB Bank • ****5678',
       method: 'Bank Transfer',
       requestedOn: '07 Mar, 2026',
       status: 'Paid',
@@ -110,7 +113,15 @@ export function readStoredPayments() {
       return defaultPayments
     }
 
-    return JSON.parse(stored) as PaymentsData
+    const parsed = JSON.parse(stored) as Partial<PaymentsData>
+
+    return {
+      transactions: parsed.transactions ?? defaultPayments.transactions,
+      payouts: (parsed.payouts ?? defaultPayments.payouts).map((payout) => ({
+        ...payout,
+        destination: payout.destination ?? payout.beneficiary,
+      })),
+    } satisfies PaymentsData
   } catch {
     return defaultPayments
   }

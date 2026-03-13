@@ -3,9 +3,9 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { bellIcon, caretDownIcon } from '../../assets/figma'
-import { AlertIcon, CheckIcon, InfoIcon, TicketIcon, TrendIcon, XIcon } from '../ui/Icons'
+import { AlertIcon, CheckIcon, InfoIcon, MenuIcon, TicketIcon, TrendIcon, XIcon } from '../ui/Icons'
 
-export function Topbar() {
+export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const items = [
     {
@@ -44,6 +44,15 @@ export function Topbar() {
 
   return (
     <header className="topbar">
+      <button
+        aria-label="Open navigation"
+        className="icon-button topbar__menu-button"
+        onClick={onMenuClick}
+        type="button"
+      >
+        <MenuIcon className="button-icon" />
+      </button>
+
       <div className="topbar__actions">
         <button className="icon-button" type="button" aria-label="Notifications" onClick={() => setIsNotificationsOpen((open) => !open)}>
           <img src={bellIcon} alt="" aria-hidden="true" />

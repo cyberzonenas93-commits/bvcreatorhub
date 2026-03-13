@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
-import { logoIcon } from '../assets/figma'
+import brandMark from '../../BV PORTRAIT MARK.png'
 import { AuthField } from '../components/auth/AuthField'
 import { AuthModeSwitch } from '../components/auth/AuthModeSwitch'
 import { PasswordRequirements } from '../components/auth/PasswordRequirements'
@@ -23,7 +23,7 @@ function isPasswordValid(password: string): boolean {
 
 type AuthMode = 'signup' | 'login'
 
-function EyeIcon() {
+function PasswordToggleIcon({ revealed }: { revealed: boolean }) {
   return (
     <svg
       aria-hidden="true"
@@ -40,13 +40,44 @@ function EyeIcon() {
         strokeWidth="1.8"
       />
       <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+      {revealed ? (
+        <path
+          d="M4 4 20 20"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.8"
+        />
+      ) : null}
     </svg>
+  )
+}
+
+function PasswordToggleButton({
+  revealed,
+  onToggle,
+}: {
+  revealed: boolean
+  onToggle: () => void
+}) {
+  return (
+    <button
+      aria-label={revealed ? 'Hide password' : 'Show password'}
+      aria-pressed={revealed}
+      className="auth-field__icon-button"
+      onClick={onToggle}
+      type="button"
+    >
+      <PasswordToggleIcon revealed={revealed} />
+    </button>
   )
 }
 
 export function GetStartedPage() {
   const navigate = useNavigate()
   const [mode, setMode] = useState<AuthMode>('signup')
+  const [signupPasswordVisible, setSignupPasswordVisible] = useState(false)
+  const [loginPasswordVisible, setLoginPasswordVisible] = useState(false)
 
   const [signup, setSignup] = useState({
     businessName: '',
@@ -70,20 +101,28 @@ export function GetStartedPage() {
 
   const isLoginValid = isEmailValid(login.email) && isNonEmpty(login.password)
 
+  function openOnboardingWithSetupData(
+    setupOverrides: Partial<typeof defaultSetupData>,
+  ) {
+    writeStoredSetupData({
+      ...defaultSetupData,
+      ...setupOverrides,
+    })
+
+    navigate('/setup/account')
+  }
+
   function handleCreateAccount() {
     if (!isSignupValid) {
       return
     }
 
-    writeStoredSetupData({
-      ...defaultSetupData,
+    openOnboardingWithSetupData({
       organizerName: signup.businessName,
       contactPerson: signup.contactPerson,
       email: signup.email,
       phone: signup.phone,
     })
-
-    navigate('/setup/account')
   }
 
   function handleLogin() {
@@ -91,22 +130,32 @@ export function GetStartedPage() {
       return
     }
 
-    navigate('/overview')
+    navigate('/dashboard')
+  }
+
+  function handleTryDemoAccount() {
+    openOnboardingWithSetupData({
+      organizerName: 'Strictly Soul Ghana',
+      contactPerson: 'Kofi Mensah',
+      email: 'organizer@strictlysoul.gh',
+      phone: '+233 24 123 4567',
+    })
   }
 
   return (
     <main className="auth-page">
       <div className="auth-page__inner">
         <div className="auth-page__brand">
-          <img className="auth-page__brand-icon" src={logoIcon} alt="Black Volta logo" />
-          <span className="auth-page__brand-text">Merchant Ticketing</span>
+          <img className="auth-page__brand-icon" src={brandMark} alt="Black Volta logo" />
+          <span className="auth-page__brand-text">Merchant Dashboard</span>
         </div>
 
         <div className="auth-page__hero">
-          <h1 className="auth-page__title">Get Started</h1>
+          <h1 className="auth-page__title">{mode === 'login' ? 'Welcome Back' : 'Get Started'}</h1>
           <p className="auth-page__subtitle">
-            Create your merchant account to start selling tickets and managing
-            events
+            {mode === 'login'
+              ? 'Sign in to access your merchant dashboard and manage your events'
+              : 'Create your merchant account to start selling tickets and managing events'}
           </p>
         </div>
 
@@ -162,11 +211,16 @@ export function GetStartedPage() {
                 <AuthField
                   label="Password"
                   placeholder="Create a strong password"
-                  type="password"
+                  type={signupPasswordVisible ? 'text' : 'password'}
                   value={signup.password}
                   onChange={(v) => setSignup((s) => ({ ...s, password: v }))}
                   valid={isPasswordValid(signup.password)}
-                  trailing={<EyeIcon />}
+                  trailing={
+                    <PasswordToggleButton
+                      revealed={signupPasswordVisible}
+                      onToggle={() => setSignupPasswordVisible((current) => !current)}
+                    />
+                  }
                 />
                 <PasswordStrengthMeter password={signup.password} />
                 <PasswordRequirements />
@@ -180,9 +234,13 @@ export function GetStartedPage() {
                   >
                     Create Account
                   </button>
-                  <Link className="auth-button auth-button--secondary" to="/overview">
+                  <button
+                    className="auth-button auth-button--secondary"
+                    onClick={handleTryDemoAccount}
+                    type="button"
+                  >
                     Try Demo Account
-                  </Link>
+                  </button>
                 </div>
               </>
             ) : (
@@ -203,11 +261,16 @@ export function GetStartedPage() {
                 <AuthField
                   label="Password"
                   placeholder="Enter your password"
-                  type="password"
+                  type={loginPasswordVisible ? 'text' : 'password'}
                   value={login.password}
                   onChange={(v) => setLogin((s) => ({ ...s, password: v }))}
                   valid={isNonEmpty(login.password)}
-                  trailing={<EyeIcon />}
+                  trailing={
+                    <PasswordToggleButton
+                      revealed={loginPasswordVisible}
+                      onToggle={() => setLoginPasswordVisible((current) => !current)}
+                    />
+                  }
                 />
 
                 <div className="auth-actions">
@@ -217,11 +280,15 @@ export function GetStartedPage() {
                     onClick={handleLogin}
                     type="button"
                   >
-                    Login
+                    Sign In
                   </button>
-                  <Link className="auth-button auth-button--secondary" to="/overview">
-                    Try Demo Account
-                  </Link>
+                  <button
+                    className="auth-button auth-button--secondary"
+                    onClick={() => navigate('/dashboard')}
+                    type="button"
+                  >
+                    Try Demo Login
+                  </button>
                 </div>
               </>
             )}

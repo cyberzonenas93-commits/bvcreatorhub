@@ -8,6 +8,7 @@ import {
   SettingsIcon,
   TrendIcon,
   UsersIcon,
+  XIcon,
 } from '../ui/Icons'
 import { navigationItems } from '../../data/navigation'
 
@@ -30,12 +31,29 @@ function SidebarItemIcon({ label }: { label: string }) {
   }
 }
 
-export function SidebarNav() {
+export function SidebarNav({
+  isMobileOpen = false,
+  onClose,
+}: {
+  isMobileOpen?: boolean
+  onClose?: () => void
+}) {
   return (
-    <aside className="sidebar" aria-label="Primary">
+    <aside className={`sidebar${isMobileOpen ? ' sidebar--mobile-open' : ''}`} aria-label="Primary">
       <div className="sidebar__brand">
-        <img className="sidebar__logo" src={brandMark} alt="Black Volta mark" />
-        <span className="sidebar__title">Admin Panel</span>
+        <div className="sidebar__brand-copy">
+          <img className="sidebar__logo" src={brandMark} alt="Black Volta mark" />
+          <span className="sidebar__title">Admin Panel</span>
+        </div>
+
+        <button
+          aria-label="Close navigation"
+          className="icon-button sidebar__close"
+          onClick={onClose}
+          type="button"
+        >
+          <XIcon className="button-icon" />
+        </button>
       </div>
 
       <nav className="sidebar__nav">
@@ -46,6 +64,7 @@ export function SidebarNav() {
               `sidebar__link${isActive ? ' sidebar__link--active' : ''}`
             }
             end={item.to === '/overview'}
+            onClick={onClose}
             to={item.to}
           >
             <SidebarItemIcon label={item.label} />

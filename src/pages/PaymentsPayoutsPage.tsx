@@ -1,27 +1,53 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
+import { payoutBrandLogos } from '../assets/payout'
 import { DashboardModal } from '../components/dashboard/Modal'
 import {
+  CardIcon,
+  CheckIcon,
   CopyIcon,
   DocumentIcon,
   DownloadIcon,
+  FilterIcon,
   MailIcon,
-  PlusIcon,
   SearchIcon,
+  TrendIcon,
 } from '../components/ui/Icons'
-import { readStoredPayments, type PayoutRecord, type TransactionRecord, writeStoredPayments } from '../lib/payments'
+import { readStoredPayments, type PayoutRecord, type PayoutStatus, writeStoredPayments } from '../lib/payments'
 
-type FinanceTab = 'transactions' | 'payouts'
-type FinanceFilter = 'all' | 'Completed' | 'Pending' | 'Failed' | 'Processing' | 'Paid'
-
-type PayoutFormState = {
-  beneficiary: string
-  method: string
-  amount: string
+type FinanceView = 'payout' | 'history'
+type FinanceFilter = 'all' | 'Completed' | 'Pending' | 'Failed'
+type PayoutMethod = 'mobile-money' | 'bank-transfer'
+type PayoutProvider = {
+  id: string
+  method: PayoutMethod
+  label: string
+  helper: string
+  logo: string
 }
 
 function formatMoney(amount: number) {
-  return `GH₵${amount.toLocaleString('en-US', { minimumFractionDigits: amount % 1 === 0 ? 0 : 1, maximumFractionDigits: 1 })}`
+  return `GH₵${amount.toLocaleString('en-US', {
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 1,
+    maximumFractionDigits: 1,
+  })}`
+}
+
+function formatPayoutStatus(status: PayoutStatus): Exclude<FinanceFilter, 'all'> {
+  if (status === 'Paid') {
+    return 'Completed'
+  }
+
+  if (status === 'Processing') {
+    return 'Pending'
+  }
+
+  return 'Failed'
+}
+
+function formatPayoutCode(id: string) {
+  const digits = id.replace(/\D/g, '')
+  return `PO-${(digits.slice(-3) || '1').padStart(3, '0')}`
 }
 
 function downloadFile(fileName: string, content: string, type: string) {
@@ -34,23 +60,18 @@ function downloadFile(fileName: string, content: string, type: string) {
   URL.revokeObjectURL(url)
 }
 
-function emptyPayoutForm(): PayoutFormState {
-  return {
-    beneficiary: 'MTN Mobile Money',
-    method: 'Mobile Money',
-    amount: '5000',
-  }
-}
-
 export function PaymentsPayoutsPage() {
   const [payments, setPayments] = useState(() => readStoredPayments())
-  const [activeTab, setActiveTab] = useState<FinanceTab>('transactions')
+  const [activeView, setActiveView] = useState<FinanceView>('payout')
   const [filter, setFilter] = useState<FinanceFilter>('all')
   const [search, setSearch] = useState('')
   const [isExportOpen, setIsExportOpen] = useState(false)
-  const [isPayoutOpen, setIsPayoutOpen] = useState(false)
-  const [payoutForm, setPayoutForm] = useState<PayoutFormState>(emptyPayoutForm)
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false)
   const [detailsText, setDetailsText] = useState<string | null>(null)
+  const [payoutMethod, setPayoutMethod] = useState<PayoutMethod>('mobile-money')
+  const [selectedProviderId, setSelectedProviderId] = useState('mtn-mobile-money')
+  const [payoutAmount, setPayoutAmount] = useState('100')
+  const [walletTransferAmount, setWalletTransferAmount] = useState('100')
 
   useEffect(() => {
     writeStoredPayments(payments)
@@ -60,297 +81,463 @@ export function PaymentsPayoutsPage() {
   const completedRevenue = payments.transactions
     .filter((transaction) => transaction.status === 'Completed')
     .reduce((sum, transaction) => sum + transaction.amount, 0)
+
+  const pendingPayoutBalance = payments.payouts
+    .filter((payout) => payout.status === 'Processing')
+    .reduce((sum, payout) => sum + payout.amount, 0)
+
   const totalRevenue = completedRevenue + 98580.5
-  const availableBalance =
-    totalRevenue -
-    payments.payouts.filter((payout) => payout.status !== 'Failed').reduce((sum, payout) => sum + payout.amount, 0)
+  const totalPaidOut = payments.payouts
+    .filter((payout) => payout.status !== 'Failed')
+    .reduce((sum, payout) => sum + payout.amount, 0)
   const promoWallet = 3200
-
-  const filteredTransactions = payments.transactions.filter((transaction) => {
-    const matchesFilter = filter === 'all' ? true : transaction.status === filter
-    const matchesSearch =
-      loweredSearch.length === 0 ||
-      [transaction.title, transaction.category, transaction.reference].some((value) => value.toLowerCase().includes(loweredSearch))
-
-    return matchesFilter && matchesSearch
-  })
+  const availableBalance = totalRevenue - totalPaidOut
 
   const filteredPayouts = payments.payouts.filter((payout) => {
-    const matchesFilter = filter === 'all' ? true : payout.status === filter
+    const formattedStatus = formatPayoutStatus(payout.status)
+    const matchesFilter = filter === 'all' ? true : formattedStatus === filter
     const matchesSearch =
       loweredSearch.length === 0 ||
-      [payout.beneficiary, payout.method, payout.reference].some((value) => value.toLowerCase().includes(loweredSearch))
+      [
+        formatPayoutCode(payout.id),
+        payout.requestedOn,
+        payout.beneficiary,
+        payout.destination,
+        payout.method,
+        payout.reference,
+        formattedStatus,
+      ].some((value) => value.toLowerCase().includes(loweredSearch))
 
     return matchesFilter && matchesSearch
   })
+
+  const availableFeatures = [
+    { label: 'Event Boost', helper: 'Promote your event', value: 'GH₵500' },
+    { label: 'Featured Listing', helper: 'Top placement', value: 'GH₵300' },
+  ]
+
+  const payoutOptions = useMemo(
+    () => [
+      {
+        id: 'mobile-money',
+        label: 'Mobile Money',
+        helper: 'Send funds to a verified mobile wallet',
+        logo: payoutBrandLogos.mtn,
+      },
+      {
+        id: 'bank-transfer',
+        label: 'Bank Transfer',
+        helper: 'Settle directly to a bank account',
+        logo: payoutBrandLogos.gcb,
+      },
+    ],
+    [],
+  )
+
+  const payoutProviders = useMemo<PayoutProvider[]>(
+    () => [
+      {
+        id: 'mtn-mobile-money',
+        method: 'mobile-money',
+        label: 'MTN Mobile Money',
+        helper: '+233 24 555 1234',
+        logo: payoutBrandLogos.mtn,
+      },
+      {
+        id: 'telecel-cash',
+        method: 'mobile-money',
+        label: 'Telecel Cash',
+        helper: '+233 20 456 2211',
+        logo: payoutBrandLogos.telecel,
+      },
+      {
+        id: 'gcb-bank',
+        method: 'bank-transfer',
+        label: 'GCB Bank',
+        helper: 'GCB Bank • ****5678',
+        logo: payoutBrandLogos.gcb,
+      },
+      {
+        id: 'ecobank-ghana',
+        method: 'bank-transfer',
+        label: 'Ecobank Ghana',
+        helper: 'Ecobank • ****1007',
+        logo: payoutBrandLogos.ecobank,
+      },
+      {
+        id: 'calbank',
+        method: 'bank-transfer',
+        label: 'CalBank',
+        helper: 'CalBank • ****6118',
+        logo: payoutBrandLogos.calbank,
+      },
+      {
+        id: 'stanbic-bank-ghana',
+        method: 'bank-transfer',
+        label: 'Stanbic Bank Ghana',
+        helper: 'Stanbic • ****3029',
+        logo: payoutBrandLogos.stanbic,
+      },
+    ],
+    [],
+  )
+
+  const visibleProviders = useMemo(
+    () => payoutProviders.filter((provider) => provider.method === payoutMethod),
+    [payoutMethod, payoutProviders],
+  )
+
+  const selectedProvider =
+    payoutProviders.find((provider) => provider.id === selectedProviderId) ?? payoutProviders[0]
 
   function exportTable(type: 'csv' | 'pdf') {
     setIsExportOpen(false)
-    const rows =
-      activeTab === 'transactions'
-        ? filteredTransactions.map((item) => `${item.title},${item.category},${item.date},${item.status},${item.amount},${item.reference}`)
-        : filteredPayouts.map((item) => `${item.beneficiary},${item.method},${item.requestedOn},${item.status},${item.amount},${item.reference}`)
+
+    const rows = filteredPayouts.map((item) =>
+      [
+        formatPayoutCode(item.id),
+        item.requestedOn,
+        item.amount,
+        item.method,
+        item.destination,
+        formatPayoutStatus(item.status),
+        item.reference,
+      ].join(','),
+    )
 
     downloadFile(
-      activeTab === 'transactions' ? `transactions.${type === 'csv' ? 'csv' : 'pdf'}` : `payouts.${type === 'csv' ? 'csv' : 'pdf'}`,
+      `payout-history.${type === 'csv' ? 'csv' : 'pdf'}`,
       rows.join('\n'),
       type === 'csv' ? 'text/csv;charset=utf-8' : 'application/pdf',
     )
   }
 
-  function openDetails(item: TransactionRecord | PayoutRecord) {
-    const label = 'title' in item ? item.title : item.beneficiary
-    setDetailsText(`${label}\nReference: ${item.reference}\nAmount: ${formatMoney(item.amount)}\nStatus: ${item.status}`)
+  function openDetails(payout: PayoutRecord) {
+    setDetailsText(
+      `${formatPayoutCode(payout.id)}\nDate: ${payout.requestedOn}\nAmount: ${formatMoney(payout.amount)}\nMethod: ${payout.method}\nDestination: ${payout.destination}\nStatus: ${formatPayoutStatus(payout.status)}\nReference: ${payout.reference}`,
+    )
   }
 
-  function createPayout() {
-    const amount = Number(payoutForm.amount)
-
-    if (!Number.isFinite(amount) || amount <= 0) {
+  function requestPayout() {
+    const amount = Number(payoutAmount)
+    if (!Number.isFinite(amount) || amount <= 0 || amount > availableBalance) {
       return
     }
 
     const nextPayout: PayoutRecord = {
       id: `pay-${Date.now()}`,
-      beneficiary: payoutForm.beneficiary,
-      method: payoutForm.method,
-      requestedOn: '12 Mar, 2026',
+      beneficiary: selectedProvider.label,
+      destination: selectedProvider.helper,
+      method: payoutMethod === 'mobile-money' ? 'Mobile Money' : 'Bank Transfer',
+      requestedOn: '13 Mar, 2026',
       status: 'Processing',
       amount,
-      reference: `PAYOUT-${Date.now()}`,
+      reference: `${selectedProvider.id.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10)}-${Date.now()}`,
     }
 
     setPayments((current) => ({
       ...current,
       payouts: [nextPayout, ...current.payouts],
     }))
-    setIsPayoutOpen(false)
-    setPayoutForm(emptyPayoutForm())
-    setActiveTab('payouts')
+    setPayoutAmount('100')
+    setActiveView('history')
   }
 
-  const filters =
-    activeTab === 'transactions'
-      ? (['all', 'Completed', 'Pending', 'Failed'] as FinanceFilter[])
-      : (['all', 'Processing', 'Paid', 'Failed'] as FinanceFilter[])
+  function selectPayoutMethod(nextMethod: PayoutMethod) {
+    setPayoutMethod(nextMethod)
+    const firstProvider = payoutProviders.find((provider) => provider.method === nextMethod)
+    if (firstProvider) {
+      setSelectedProviderId(firstProvider.id)
+    }
+  }
+
+  function transferToWallet() {
+    const amount = Number(walletTransferAmount)
+    if (!Number.isFinite(amount) || amount <= 0 || amount > availableBalance) {
+      return
+    }
+
+    setPayments((current) => ({
+      ...current,
+      transactions: [
+        {
+          id: `promo-${Date.now()}`,
+          title: 'Promo Wallet Transfer',
+          category: 'Promo Wallet',
+          date: '13 Mar, 2026',
+          status: 'Completed',
+          amount,
+          reference: `PROMO-${Date.now()}`,
+        },
+        ...current.transactions,
+      ],
+    }))
+    setWalletTransferAmount('100')
+  }
 
   return (
     <div className="dashboard-page dashboard-page--narrow utility-page">
-      <section className="utility-page__header">
+      <section className="utility-page__header utility-page__header--stacked">
         <div>
           <h1>Payments &amp; Payouts</h1>
-          <p>Manage your earnings, payouts, and transaction history.</p>
+          <p>Manage your earnings, initiate payouts, and transfer to your promo wallet</p>
         </div>
       </section>
 
       <section className="affiliate-metrics">
         <article className="detail-metric-card">
-          <span className="detail-metric-card__label">Total Revenue</span>
-          <strong className="detail-metric-card__value">{formatMoney(totalRevenue)}</strong>
-        </article>
-        <article className="detail-metric-card">
           <span className="detail-metric-card__label">Available Balance</span>
           <strong className="detail-metric-card__value">{formatMoney(availableBalance)}</strong>
+          <small>Ready to withdraw</small>
         </article>
         <article className="detail-metric-card">
           <span className="detail-metric-card__label">Promo Wallet</span>
           <strong className="detail-metric-card__value">GH₵{promoWallet.toLocaleString('en-US')}</strong>
+          <small>For event promotions</small>
+        </article>
+        <article className="detail-metric-card">
+          <span className="detail-metric-card__label">Pending</span>
+          <strong className="detail-metric-card__value">{formatMoney(pendingPayoutBalance)}</strong>
+          <small>Processing</small>
         </article>
       </section>
 
-      <section className="table-shell finance-shell">
-        <div className="finance-shell__tabs">
-          <button
-            className={activeTab === 'transactions' ? 'finance-shell__tab finance-shell__tab--active' : 'finance-shell__tab'}
-            onClick={() => {
-              setActiveTab('transactions')
-              setFilter('all')
-            }}
-            type="button"
-          >
-            Transactions
-          </button>
-          <button
-            className={activeTab === 'payouts' ? 'finance-shell__tab finance-shell__tab--active' : 'finance-shell__tab'}
-            onClick={() => {
-              setActiveTab('payouts')
-              setFilter('all')
-            }}
-            type="button"
-          >
-            Payouts
-          </button>
-        </div>
+      <div className="finance-view-tabs">
+        <button
+          className={activeView === 'payout' ? 'finance-view-tabs__tab finance-view-tabs__tab--active' : 'finance-view-tabs__tab'}
+          onClick={() => setActiveView('payout')}
+          type="button"
+        >
+          Payout
+        </button>
+        <button
+          className={activeView === 'history' ? 'finance-view-tabs__tab finance-view-tabs__tab--active' : 'finance-view-tabs__tab'}
+          onClick={() => setActiveView('history')}
+          type="button"
+        >
+          History
+        </button>
+      </div>
 
-        <div className="finance-shell__toolbar">
-          <div className="segmented-control segmented-control--compact">
-            {filters.map((item) => (
-              <button
-                key={item}
-                className={filter === item ? 'segmented-control__option segmented-control__option--active' : 'segmented-control__option'}
-                onClick={() => setFilter(item)}
-                type="button"
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-
-          <div className="utility-page__actions">
-            <label className="search-bar search-bar--compact">
-              <SearchIcon className="search-bar__icon" />
-              <input onChange={(event) => setSearch(event.target.value)} placeholder="Search" value={search} />
-            </label>
-
-            <div className="toolbar-dropdown">
-              <button className="surface-button surface-button--slim" onClick={() => setIsExportOpen((open) => !open)} type="button">
-                <span>Export</span>
-                <DownloadIcon className="button-icon" />
-              </button>
-              {isExportOpen ? (
-                <div className="toolbar-dropdown__menu">
-                  <button onClick={() => exportTable('csv')} type="button">Export as CSV</button>
-                  <button onClick={() => exportTable('pdf')} type="button">Export as PDF</button>
-                </div>
-              ) : null}
+      {activeView === 'payout' ? (
+        <section className="payments-payout-grid">
+          <article className="payments-card">
+            <div className="payments-card__title">
+              <span className="detail-metric-card__icon"><DownloadIcon className="button-icon" /></span>
+              <div>
+                <h2>Request Payout</h2>
+                <p>Withdraw funds to your account</p>
+              </div>
             </div>
 
-            <button className="page-primary-cta page-primary-cta--compact" onClick={() => setIsPayoutOpen(true)} type="button">
-              <PlusIcon className="button-icon" />
-              <span>Create payout</span>
+            <label className="form-field">
+              <span>Amount (GH₵)</span>
+              <input onChange={(event) => setPayoutAmount(event.target.value)} value={payoutAmount} />
+              <small>Available: {formatMoney(availableBalance)}</small>
+            </label>
+
+            <div className="payments-method-list">
+              {payoutOptions.map((option) => (
+                <button
+                  key={option.id}
+                  className={payoutMethod === option.id ? 'payments-method-card payments-method-card--active' : 'payments-method-card'}
+                  onClick={() => selectPayoutMethod(option.id as PayoutMethod)}
+                  type="button"
+                >
+                  <span className="payments-method-card__avatar">
+                    <img alt="" className="payments-method-card__avatar-image" src={option.logo} />
+                  </span>
+                  <div>
+                    <strong>{option.label}</strong>
+                    <span>{option.helper}</span>
+                  </div>
+                  {payoutMethod === option.id ? <CheckIcon className="button-icon" /> : null}
+                </button>
+              ))}
+            </div>
+
+            <div className="payments-provider-grid" role="list" aria-label={payoutMethod === 'mobile-money' ? 'Select mobile money network' : 'Select bank'}>
+              {visibleProviders.map((provider) => (
+                <button
+                  key={provider.id}
+                  className={selectedProviderId === provider.id ? 'payments-provider-card payments-provider-card--active' : 'payments-provider-card'}
+                  onClick={() => setSelectedProviderId(provider.id)}
+                  type="button"
+                >
+                  <span className="payments-provider-card__logo">
+                    <img alt="" className="payments-provider-card__logo-image" src={provider.logo} />
+                  </span>
+                  <span className="payments-provider-card__copy">
+                    <strong>{provider.label}</strong>
+                    <span>{provider.helper}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <button className="page-primary-cta page-primary-cta--full" onClick={requestPayout} type="button">
+              <span>Request Payout</span>
             </button>
-          </div>
-        </div>
 
-        {activeTab === 'transactions' ? (
+            <div className="settings-note settings-note--compact">
+              <TrendIcon className="button-icon" />
+              <div>
+                <strong>Payout Processing Time</strong>
+                <p>MTN Mobile Money: 1-2 hours | Bank Transfer: 1-3 business days</p>
+              </div>
+            </div>
+          </article>
+
+          <article className="payments-card">
+            <div className="payments-card__title">
+              <span className="detail-metric-card__icon"><CardIcon className="button-icon" /></span>
+              <div>
+                <h2>Transfer to Promo Wallet</h2>
+                <p>Use promo balance for event ads</p>
+              </div>
+            </div>
+
+            <label className="form-field">
+              <span>Transfer Amount (GH₵)</span>
+              <input onChange={(event) => setWalletTransferAmount(event.target.value)} value={walletTransferAmount} />
+              <small>Available: {formatMoney(availableBalance)}</small>
+            </label>
+
+            <button className="page-primary-cta page-primary-cta--full" onClick={transferToWallet} type="button">
+              <span>Transfer to Wallet</span>
+            </button>
+
+            <div className="payments-feature-list">
+              <span>Available Features</span>
+              {availableFeatures.map((feature) => (
+                <div key={feature.label}>
+                  <div>
+                    <strong>{feature.label}</strong>
+                    <span>{feature.helper}</span>
+                  </div>
+                  <strong>{feature.value}</strong>
+                </div>
+              ))}
+            </div>
+          </article>
+        </section>
+      ) : null}
+
+      {activeView === 'history' ? (
+        <section className="table-shell finance-shell">
+          <div className="finance-shell__toolbar">
+            <label className="search-bar search-bar--compact">
+              <SearchIcon className="search-bar__icon" />
+              <input onChange={(event) => setSearch(event.target.value)} placeholder="Search payouts..." value={search} />
+            </label>
+
+            <div className="utility-page__actions">
+              <div className="toolbar-dropdown">
+                <button className="surface-button surface-button--slim" onClick={() => setIsFilterMenuOpen((open) => !open)} type="button">
+                  <FilterIcon className="button-icon" />
+                  <span>Filters</span>
+                </button>
+                {isFilterMenuOpen ? (
+                  <div className="toolbar-dropdown__menu">
+                    {(['all', 'Completed', 'Pending', 'Failed'] as const).map((option) => (
+                      <button
+                        key={option}
+                        onClick={() => {
+                          setFilter(option)
+                          setIsFilterMenuOpen(false)
+                        }}
+                        type="button"
+                      >
+                        {option === 'all' ? 'All statuses' : option}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="toolbar-dropdown">
+                <button className="page-primary-cta page-primary-cta--compact" onClick={() => setIsExportOpen((open) => !open)} type="button">
+                  <DownloadIcon className="button-icon" />
+                  <span>Export</span>
+                </button>
+                {isExportOpen ? (
+                  <div className="toolbar-dropdown__menu">
+                    <button onClick={() => exportTable('csv')} type="button">Export as CSV</button>
+                    <button onClick={() => exportTable('pdf')} type="button">Export as PDF</button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
           <table className="data-table">
             <thead>
               <tr>
-                <th>Title</th>
-                <th>Category</th>
+                <th>ID</th>
                 <th>Date</th>
-                <th>Status</th>
                 <th>Amount</th>
-                <th>Reference</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTransactions.map((transaction) => (
-                <tr key={transaction.id}>
-                  <td>{transaction.title}</td>
-                  <td>{transaction.category}</td>
-                  <td>{transaction.date}</td>
-                  <td><span className="status-dot" />{transaction.status}</td>
-                  <td>{formatMoney(transaction.amount)}</td>
-                  <td>{transaction.reference}</td>
-                  <td className="actions-cell">
-                    <button className="icon-action-button" onClick={() => openDetails(transaction)} type="button">
-                      <DocumentIcon className="button-icon button-icon--muted" />
-                    </button>
-                    <button className="icon-action-button" onClick={() => navigator.clipboard.writeText(transaction.reference)} type="button">
-                      <CopyIcon className="button-icon button-icon--muted" />
-                    </button>
-                    <button className="icon-action-button" onClick={() => downloadFile(`${transaction.id}.txt`, `${transaction.title}\n${transaction.reference}`, 'text/plain')} type="button">
-                      <DownloadIcon className="button-icon button-icon--accent" />
-                    </button>
-                    <button className="icon-action-button" onClick={() => (window.location.href = `mailto:?subject=${encodeURIComponent(transaction.title)}&body=${encodeURIComponent(transaction.reference)}`)} type="button">
-                      <MailIcon className="button-icon button-icon--accent" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Beneficiary</th>
                 <th>Method</th>
-                <th>Requested</th>
+                <th>Destination</th>
                 <th>Status</th>
-                <th>Amount</th>
                 <th>Reference</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPayouts.map((payout) => (
-                <tr key={payout.id}>
-                  <td>{payout.beneficiary}</td>
-                  <td>{payout.method}</td>
-                  <td>{payout.requestedOn}</td>
-                  <td><span className="status-dot" />{payout.status}</td>
-                  <td>{formatMoney(payout.amount)}</td>
-                  <td>{payout.reference}</td>
-                  <td className="actions-cell">
-                    <button className="icon-action-button" onClick={() => openDetails(payout)} type="button">
-                      <DocumentIcon className="button-icon button-icon--muted" />
-                    </button>
-                    <button className="icon-action-button" onClick={() => navigator.clipboard.writeText(payout.reference)} type="button">
-                      <CopyIcon className="button-icon button-icon--muted" />
-                    </button>
-                    <button className="icon-action-button" onClick={() => downloadFile(`${payout.id}.txt`, `${payout.beneficiary}\n${payout.reference}`, 'text/plain')} type="button">
-                      <DownloadIcon className="button-icon button-icon--accent" />
-                    </button>
-                    <button className="icon-action-button" onClick={() => (window.location.href = `mailto:?subject=${encodeURIComponent('Payout update')}&body=${encodeURIComponent(payout.reference)}`)} type="button">
-                      <MailIcon className="button-icon button-icon--accent" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredPayouts.map((payout) => {
+                const status = formatPayoutStatus(payout.status)
+                const statusClass =
+                  status === 'Completed'
+                    ? 'status-dot'
+                    : status === 'Pending'
+                      ? 'status-dot status-dot--pending'
+                      : 'status-dot status-dot--danger'
+
+                return (
+                  <tr key={payout.id}>
+                    <td>{formatPayoutCode(payout.id)}</td>
+                    <td>{payout.requestedOn}</td>
+                    <td>{formatMoney(payout.amount)}</td>
+                    <td>{payout.method}</td>
+                    <td>{payout.destination}</td>
+                    <td>
+                      <span className={statusClass} />
+                      {status}
+                    </td>
+                    <td>{payout.reference}</td>
+                    <td className="actions-cell">
+                      <button className="icon-action-button" onClick={() => openDetails(payout)} type="button">
+                        <DocumentIcon className="button-icon button-icon--muted" />
+                      </button>
+                      <button className="icon-action-button" onClick={() => navigator.clipboard.writeText(payout.reference)} type="button">
+                        <CopyIcon className="button-icon button-icon--muted" />
+                      </button>
+                      <button className="icon-action-button" onClick={() => downloadFile(`${payout.id}.txt`, `${payout.beneficiary}\n${payout.reference}`, 'text/plain')} type="button">
+                        <DownloadIcon className="button-icon button-icon--accent" />
+                      </button>
+                      <button className="icon-action-button" onClick={() => (window.location.href = `mailto:?subject=${encodeURIComponent('Payout update')}&body=${encodeURIComponent(payout.reference)}`)} type="button">
+                        <MailIcon className="button-icon button-icon--accent" />
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
-        )}
 
-        <div className="pager pager--compact">
-          <span className="pager__summary">
-            {activeTab === 'transactions'
-              ? `Showing 1 to ${filteredTransactions.length} of ${filteredTransactions.length} entries`
-              : `Showing 1 to ${filteredPayouts.length} of ${filteredPayouts.length} entries`}
-          </span>
-          <div className="pager__controls">
-            <button type="button">‹</button>
-            <button className="pager__page pager__page--active" type="button">1</button>
-            <button type="button">›</button>
+          <div className="pager pager--compact">
+            <span className="pager__summary">
+              {filteredPayouts.length === 0
+                ? 'Showing 0-0 of 0 payouts'
+                : `Showing 1-${filteredPayouts.length} of ${filteredPayouts.length} payouts`}
+            </span>
+            <div className="pager__controls">
+              <button type="button">‹</button>
+              <button className="pager__page pager__page--active" type="button">1</button>
+              <button type="button">›</button>
+            </div>
           </div>
-        </div>
-      </section>
-
-      {isPayoutOpen ? (
-        <DashboardModal
-          footer={
-            <>
-              <button className="surface-button surface-button--wide" onClick={() => setIsPayoutOpen(false)} type="button">
-                Cancel
-              </button>
-              <button className="page-primary-cta page-primary-cta--compact" onClick={createPayout} type="button">
-                Create payout
-              </button>
-            </>
-          }
-          onClose={() => setIsPayoutOpen(false)}
-          title="Create payout"
-        >
-          <div className="modal-form-grid">
-            <label className="form-field">
-              <span>Beneficiary</span>
-              <input onChange={(event) => setPayoutForm((current) => ({ ...current, beneficiary: event.target.value }))} value={payoutForm.beneficiary} />
-            </label>
-            <label className="form-field">
-              <span>Method</span>
-              <select onChange={(event) => setPayoutForm((current) => ({ ...current, method: event.target.value }))} value={payoutForm.method}>
-                <option>Mobile Money</option>
-                <option>Bank Transfer</option>
-              </select>
-            </label>
-            <label className="form-field form-field--full">
-              <span>Amount</span>
-              <input onChange={(event) => setPayoutForm((current) => ({ ...current, amount: event.target.value }))} value={payoutForm.amount} />
-            </label>
-          </div>
-        </DashboardModal>
+        </section>
       ) : null}
 
       {detailsText ? (
@@ -359,7 +546,7 @@ export function PaymentsPayoutsPage() {
           onClose={() => setDetailsText(null)}
           title="Details"
         >
-          <pre className="dashboard-pre">{detailsText}</pre>
+          <pre className="dashboard-modal__copy dashboard-modal__copy--pre">{detailsText}</pre>
         </DashboardModal>
       ) : null}
     </div>

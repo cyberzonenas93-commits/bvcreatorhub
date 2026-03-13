@@ -96,6 +96,14 @@ export function SearchIcon(props: IconProps) {
   )
 }
 
+export function MenuIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </Svg>
+  )
+}
+
 export function FilterIcon(props: IconProps) {
   return (
     <Svg {...props}>
@@ -179,6 +187,22 @@ export function ChevronRightIcon(props: IconProps) {
   return (
     <Svg {...props}>
       <path d="m10 6 6 6-6 6" />
+    </Svg>
+  )
+}
+
+export function SortArrowsIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 5v14M8.5 8.5 12 5l3.5 3.5M8.5 15.5 12 19l3.5-3.5" />
+    </Svg>
+  )
+}
+
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m6 9 6 6 6-6" />
     </Svg>
   )
 }
@@ -274,6 +298,16 @@ export function DownloadIcon(props: IconProps) {
   return (
     <Svg {...props}>
       <path d="M12 4v10M8 10l4 4 4-4M5 19h14" />
+    </Svg>
+  )
+}
+
+export function UploadIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 20V8" />
+      <path d="m7.5 12.5 4.5-4.5 4.5 4.5" />
+      <path d="M5 20h14" />
     </Svg>
   )
 }
@@ -433,6 +467,46 @@ export function WalletIcon(props: IconProps) {
       <path d="M4 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1H6a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" />
       <rect x="13" y="10" width="7" height="6" rx="1.5" />
       <circle cx="16" cy="13" r="0.8" fill="currentColor" stroke="none" />
+    </Svg>
+  )
+}
+
+export function StoreIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 9.5 5.5 5h13L20 9.5" />
+      <path d="M5 9.5a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0" />
+      <path d="M6 11.5v7h12v-7" />
+      <path d="M9 18.5v-4h6v4" />
+    </Svg>
+  )
+}
+
+export function PackageIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m12 3.8 7 3.5v9.4l-7 3.5-7-3.5V7.3l7-3.5Z" />
+      <path d="m12 3.8 7 3.5-7 3.5-7-3.5" />
+      <path d="M12 10.8v9.4" />
+    </Svg>
+  )
+}
+
+export function LayersIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m12 4 8 4-8 4-8-4 8-4Z" />
+      <path d="m4 12 8 4 8-4" />
+      <path d="m4 16 8 4 8-4" />
+    </Svg>
+  )
+}
+
+export function MegaphoneIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 11v2a2 2 0 0 0 2 2h1l2 4h2l-1.2-4H12l6 3V6l-6 3H6a2 2 0 0 0-2 2Z" />
+      <path d="M19 9.5a3.5 3.5 0 0 1 0 5" />
     </Svg>
   )
 }

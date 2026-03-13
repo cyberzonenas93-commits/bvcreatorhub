@@ -4,7 +4,8 @@ import type { ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 
 import { DashboardModal } from '../components/dashboard/Modal'
-import { AlertIcon, CardIcon, CheckIcon, GlobeIcon, ImageIcon, MailIcon, ShieldCheckIcon } from '../components/ui/Icons'
+import { LogoUploadField } from '../components/settings/LogoUploadField'
+import { AlertIcon, CardIcon, CheckIcon, GlobeIcon, MailIcon, ShieldCheckIcon } from '../components/ui/Icons'
 import {
   businessTypeOptions,
   type MerchantSetupData,
@@ -87,6 +88,34 @@ export function SettingsDetailPage() {
     setShowSaved(true)
   }
 
+  function handleLogoFile(file: File | null) {
+    if (!file || !file.type.startsWith('image/')) {
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        return
+      }
+
+      setProfileState((current) => ({
+        ...current,
+        logoFileName: file.name,
+        logoImageUrl: reader.result as string,
+      }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function clearLogo() {
+    setProfileState((current) => ({
+      ...current,
+      logoFileName: '',
+      logoImageUrl: '',
+    }))
+  }
+
   function savePreferences() {
     writeStoredSettingsPreferences(settingsState)
     setShowSaved(true)
@@ -143,14 +172,13 @@ export function SettingsDetailPage() {
                 <input onChange={(event) => setProfileState((current) => ({ ...current, instagram: event.target.value }))} value={profileState.instagram} />
               </div>
             </label>
-            <label className="form-field form-field--full">
-              <span>Logo</span>
-              <div className="upload-row">
-                <ImageIcon className="button-icon" />
-                <span>{profileState.logoFileName || 'Upload New Logo'}</span>
-                <input className="sr-only" onChange={(event) => setProfileState((current) => ({ ...current, logoFileName: event.target.files?.[0]?.name ?? current.logoFileName }))} type="file" />
-              </div>
-            </label>
+            <LogoUploadField
+              label="Logo"
+              logoFileName={profileState.logoFileName}
+              logoImageUrl={profileState.logoImageUrl}
+              onClear={clearLogo}
+              onSelectFile={handleLogoFile}
+            />
           </div>
 
           <button className="page-primary-cta page-primary-cta--full" onClick={saveProfile} type="button">

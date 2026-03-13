@@ -1,0 +1,30 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="clip-avatar-01">
+      <rect width="96" height="96" rx="48" fill="white" />
+    </clipPath>
+    <linearGradient id="bg-avatar-01" x1="10" y1="8" x2="86" y2="88" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2E475F" />
+      <stop offset="1" stop-color="#0D1520" />
+    </linearGradient>
+    <linearGradient id="coat-avatar-01" x1="48" y1="58" x2="48" y2="96" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F2B94B" />
+      <stop offset="1" stop-color="#D67E16" />
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#clip-avatar-01)">
+    <rect width="96" height="96" fill="url(#bg-avatar-01)" />
+    <circle cx="78" cy="19" r="14" fill="white" fill-opacity="0.08" />
+    <circle cx="16" cy="83" r="18" fill="#8EC1FF" fill-opacity="0.12" />
+    <path d="M18 104C22 79.5 33.5 66 48 66C62.5 66 74 79.5 78 104H18Z" fill="url(#coat-avatar-01)" />
+    <path d="M31 44C31 29.6 38.8 20 48 20C57.2 20 65 29.6 65 44V48C65 62.4 57.2 72 48 72C38.8 72 31 62.4 31 48V44Z" fill="#9B623C" />
+    <path d="M29 43C29 26.4 37 15 48 15C59 15 67 26.4 67 43V46H29V43Z" fill="#101419" />
+    <path d="M36 35C38 28.5 42.2 25 48 25C53.8 25 58 28.5 60 35L61 41H35L36 35Z" fill="#1C242C" />
+    <path d="M40 48C40 45.8 41.8 44 44 44C46.2 44 48 45.8 48 48V52C48 54.2 46.2 56 44 56C41.8 56 40 54.2 40 52V48Z" fill="#875534" fill-opacity="0.3" />
+    <path d="M48 44C48 41.8 49.8 40 52 40C54.2 40 56 41.8 56 44V55C56 57.2 54.2 59 52 59C49.8 59 48 57.2 48 55V44Z" fill="#875534" fill-opacity="0.2" />
+    <circle cx="41.5" cy="46.5" r="1.7" fill="#20150F" />
+    <circle cx="54.5" cy="46.5" r="1.7" fill="#20150F" />
+    <path d="M44 58C45.2 59.5 46.8 60.2 48.7 60.2C50.7 60.2 52.4 59.5 53.8 58" stroke="#6B3F26" stroke-width="1.6" stroke-linecap="round" />
+    <path d="M38 72C41 75.2 44.4 77 48 77C51.6 77 55 75.2 58 72V96H38V72Z" fill="#F7D7BF" fill-opacity="0.16" />
+  </g>
+</svg>

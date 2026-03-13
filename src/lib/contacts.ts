@@ -1,5 +1,8 @@
+import { createProfileAvatarUrl } from './profileAvatar'
+
 export type ContactSegment = 'VIP' | 'Regular'
 export type ContactStatus = 'Active' | 'Inactive'
+export type ContactAvatarKind = 'generated' | 'uploaded'
 
 export interface ContactRecord {
   id: string
@@ -11,9 +14,31 @@ export interface ContactRecord {
   segment: ContactSegment
   updatedAt: string
   note: string
+  avatarUrl: string
+  avatarKind: ContactAvatarKind
 }
 
 const CONTACTS_STORAGE_KEY = 'bv-dashboard-contacts'
+
+export function createContactAvatarUrl(name: string) {
+  return createProfileAvatarUrl(name)
+}
+
+function hydrateContact(
+  contact: ContactRecord | Omit<ContactRecord, 'avatarUrl' | 'avatarKind'>,
+): ContactRecord {
+  const avatarKind = 'avatarKind' in contact ? contact.avatarKind : 'generated'
+  const avatarUrl =
+    avatarKind === 'uploaded' && 'avatarUrl' in contact && contact.avatarUrl
+      ? contact.avatarUrl
+      : createContactAvatarUrl(contact.name)
+
+  return {
+    ...contact,
+    avatarKind,
+    avatarUrl,
+  }
+}
 
 const defaultContacts: ContactRecord[] = [
   {
@@ -26,6 +51,8 @@ const defaultContacts: ContactRecord[] = [
     segment: 'VIP',
     updatedAt: '2026-03-10',
     note: 'Frequent VIP purchaser',
+    avatarUrl: createContactAvatarUrl('Kwame Asante'),
+    avatarKind: 'generated',
   },
   {
     id: 'ama-mensah',
@@ -37,6 +64,8 @@ const defaultContacts: ContactRecord[] = [
     segment: 'Regular',
     updatedAt: '2026-03-04',
     note: 'Responds well to product updates',
+    avatarUrl: createContactAvatarUrl('Ama Mensah'),
+    avatarKind: 'generated',
   },
   {
     id: 'kofi-osei',
@@ -48,6 +77,8 @@ const defaultContacts: ContactRecord[] = [
     segment: 'VIP',
     updatedAt: '2026-02-20',
     note: 'Prefers direct outreach',
+    avatarUrl: createContactAvatarUrl('Kofi Osei'),
+    avatarKind: 'generated',
   },
 ]
 
@@ -67,7 +98,7 @@ export function readStoredContacts() {
       return defaultContacts
     }
 
-    return sortContacts(JSON.parse(stored) as ContactRecord[])
+    return sortContacts((JSON.parse(stored) as ContactRecord[]).map(hydrateContact))
   } catch {
     return defaultContacts
   }
@@ -78,7 +109,10 @@ export function writeStoredContacts(contacts: ContactRecord[]) {
     return
   }
 
-  window.localStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(sortContacts(contacts)))
+  window.localStorage.setItem(
+    CONTACTS_STORAGE_KEY,
+    JSON.stringify(sortContacts(contacts).map(hydrateContact)),
+  )
 }
 
 export function createContactId(name: string) {

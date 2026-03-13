@@ -7,17 +7,19 @@ export function DashboardModal({
   children,
   onClose,
   footer,
+  className = '',
 }: {
   title: string
   children: ReactNode
   onClose: () => void
   footer?: ReactNode
+  className?: string
 }) {
   return (
     <div className="dashboard-modal-overlay" role="presentation" onClick={onClose}>
       <section
         aria-modal="true"
-        className="dashboard-modal"
+        className={`dashboard-modal ${className}`.trim()}
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
