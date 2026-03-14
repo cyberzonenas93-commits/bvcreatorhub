@@ -108,7 +108,7 @@ export function PaymentsPage() {
   }
 
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page merch-payments-page">
       <MerchPageHeader
         actions={[
           {

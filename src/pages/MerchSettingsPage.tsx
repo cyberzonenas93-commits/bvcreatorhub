@@ -84,7 +84,7 @@ export function MerchSettingsPage() {
   }
 
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page merch-settings-page">
       <MerchPageHeader
         actions={[
           {

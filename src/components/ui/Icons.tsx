@@ -60,6 +60,15 @@ export function UsersIcon(props: IconProps) {
   )
 }
 
+export function UserIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="8.5" r="3.5" />
+      <path d="M5 19v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1" />
+    </Svg>
+  )
+}
+
 export function TrendIcon(props: IconProps) {
   return (
     <Svg {...props}>
@@ -74,6 +83,14 @@ export function CardIcon(props: IconProps) {
     <Svg {...props}>
       <rect x="3.5" y="5" width="17" height="14" rx="2" />
       <path d="M3.5 10H20.5M7 15h4" />
+    </Svg>
+  )
+}
+
+export function ShieldIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 3.5 5.5 6v5.5c0 4 2.55 6.95 6.5 8.5 3.95-1.55 6.5-4.5 6.5-8.5V6L12 3.5Z" />
     </Svg>
   )
 }
@@ -256,6 +273,15 @@ export function DollarIcon(props: IconProps) {
     <Svg {...props}>
       <path d="M12 4v16" />
       <path d="M15.7 7.3c-.8-.8-2.2-1.3-3.7-1.3-2.3 0-4 1.1-4 2.8s1.4 2.5 4 3.1c2.6.6 4 1.4 4 3.1s-1.7 2.9-4 2.9c-1.8 0-3.3-.6-4.3-1.7" />
+    </Svg>
+  )
+}
+
+export function CheckCircleIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8.5 12 2.4 2.4 4.6-4.8" />
     </Svg>
   )
 }
@@ -478,6 +504,18 @@ export function StoreIcon(props: IconProps) {
       <path d="M5 9.5a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0" />
       <path d="M6 11.5v7h12v-7" />
       <path d="M9 18.5v-4h6v4" />
+    </Svg>
+  )
+}
+
+export function InventoryIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="4" y="5" width="7" height="6" rx="1.4" />
+      <rect x="13" y="5" width="7" height="6" rx="1.4" />
+      <rect x="4" y="13" width="7" height="6" rx="1.4" />
+      <path d="M13 16h7" />
+      <path d="M16.5 13v6" />
     </Svg>
   )
 }

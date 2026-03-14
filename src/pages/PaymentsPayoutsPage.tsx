@@ -5,6 +5,7 @@ import { DashboardModal } from '../components/dashboard/Modal'
 import {
   CardIcon,
   CheckIcon,
+  ClockIcon,
   CopyIcon,
   DocumentIcon,
   DownloadIcon,
@@ -12,6 +13,7 @@ import {
   MailIcon,
   SearchIcon,
   TrendIcon,
+  WalletIcon,
 } from '../components/ui/Icons'
 import { readStoredPayments, type PayoutRecord, type PayoutStatus, writeStoredPayments } from '../lib/payments'
 
@@ -276,7 +278,7 @@ export function PaymentsPayoutsPage() {
   }
 
   return (
-    <div className="dashboard-page dashboard-page--narrow utility-page">
+    <div className="dashboard-page dashboard-page--narrow utility-page payments-page">
       <section className="utility-page__header utility-page__header--stacked">
         <div>
           <h1>Payments &amp; Payouts</h1>
@@ -286,16 +288,31 @@ export function PaymentsPayoutsPage() {
 
       <section className="affiliate-metrics">
         <article className="detail-metric-card">
+          <div className="detail-metric-card__topline">
+            <span className="detail-metric-card__icon">
+              <CardIcon className="button-icon" />
+            </span>
+          </div>
           <span className="detail-metric-card__label">Available Balance</span>
           <strong className="detail-metric-card__value">{formatMoney(availableBalance)}</strong>
           <small>Ready to withdraw</small>
         </article>
         <article className="detail-metric-card">
+          <div className="detail-metric-card__topline">
+            <span className="detail-metric-card__icon">
+              <WalletIcon className="button-icon" />
+            </span>
+          </div>
           <span className="detail-metric-card__label">Promo Wallet</span>
           <strong className="detail-metric-card__value">GH₵{promoWallet.toLocaleString('en-US')}</strong>
           <small>For event promotions</small>
         </article>
         <article className="detail-metric-card">
+          <div className="detail-metric-card__topline">
+            <span className="detail-metric-card__icon">
+              <ClockIcon className="button-icon" />
+            </span>
+          </div>
           <span className="detail-metric-card__label">Pending</span>
           <strong className="detail-metric-card__value">{formatMoney(pendingPayoutBalance)}</strong>
           <small>Processing</small>

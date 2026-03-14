@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import brandMark from '../../BV PORTRAIT MARK.png'
 import { AuthField } from '../components/auth/AuthField'
 import { AuthModeSwitch } from '../components/auth/AuthModeSwitch'
 import { PasswordRequirements } from '../components/auth/PasswordRequirements'
 import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter'
+import { VBLogo } from '../components/ui/VBLogo'
 import {
   defaultSetupData,
   isEmailValid,
@@ -143,11 +143,13 @@ export function GetStartedPage() {
   }
 
   return (
-    <main className="auth-page">
+    <main className="auth-page auth-page--ticketing">
       <div className="auth-page__inner">
         <div className="auth-page__brand">
-          <img className="auth-page__brand-icon" src={brandMark} alt="Black Volta logo" />
-          <span className="auth-page__brand-text">BV Creator Hub</span>
+          <span className="auth-page__brand-icon auth-page__brand-icon--ticketing" aria-hidden="true">
+            <VBLogo />
+          </span>
+          <span className="auth-page__brand-text">Merchant Dashboard</span>
         </div>
 
         <div className="auth-page__hero">

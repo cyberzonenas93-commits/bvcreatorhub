@@ -4,7 +4,7 @@ export type NavigationItem = {
 }
 
 export const ticketingNavigationItems: NavigationItem[] = [
-  { label: 'Overview', to: '/overview' },
+  { label: 'Overview', to: '/dashboard' },
   { label: 'Events', to: '/events' },
   { label: 'Contacts', to: '/contacts' },
   { label: 'Affiliate', to: '/affiliate' },

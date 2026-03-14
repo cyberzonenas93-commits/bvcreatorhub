@@ -28,14 +28,32 @@ import { RiskPage } from './pages/RiskPage'
 import { SettingsDetailPage } from './pages/SettingsDetailPage'
 import { SettingsPage } from './pages/SettingsPage'
 
+function getDefaultRootPath() {
+  if (typeof window === 'undefined') {
+    return '/ticketing/get-started'
+  }
+
+  const hostname = window.location.hostname.toLowerCase()
+
+  if (hostname.includes('bvcreatorhub.web.app')) {
+    return '/merch/get-started'
+  }
+
+  if (hostname.includes('blacvolta-merchants.web.app')) {
+    return '/ticketing/get-started'
+  }
+
+  return '/ticketing/get-started'
+}
+
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate replace to="/merch/get-started" />,
+    element: <Navigate replace to={getDefaultRootPath()} />,
   },
   {
     path: 'auth',
-    element: <Navigate replace to="/merch/get-started" />,
+    element: <Navigate replace to={getDefaultRootPath()} />,
   },
   {
     path: 'ticketing/get-started',
@@ -74,11 +92,11 @@ const router = createBrowserRouter([
     children: [
       {
         path: 'dashboard',
-        element: <Navigate replace to="/overview" />,
+        element: <OverviewPage />,
       },
       {
         path: 'overview',
-        element: <OverviewPage />,
+        element: <Navigate replace to="/dashboard" />,
       },
       {
         path: 'events',
@@ -190,7 +208,7 @@ const router = createBrowserRouter([
   },
   {
     path: '*',
-    element: <Navigate replace to="/" />,
+    element: <Navigate replace to={getDefaultRootPath()} />,
   },
 ])
 

@@ -1,6 +1,6 @@
-import { useDeferredValue, useState } from 'react'
+import { useDeferredValue, useEffect, useRef, useState } from 'react'
 
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import {
   ArrowRightIcon,
@@ -13,7 +13,14 @@ import {
   PlusIcon,
   SearchIcon,
 } from '../components/ui/Icons'
-import { formatEventDate, formatRecurringSummary, readStoredEvents } from '../lib/events'
+import {
+  createEventId,
+  formatEventDate,
+  formatRecurringSummary,
+  readStoredEvents,
+  upsertStoredEvent,
+  type StoredEvent,
+} from '../lib/events'
 
 type EventStatusFilter = 'All' | 'Live' | 'Draft' | 'Ended' | 'Cancelled'
 
@@ -42,10 +49,38 @@ function statusClass(value: string) {
 
 export function EventsManagementPage() {
   const cards = readStoredEvents()
+  const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState<EventStatusFilter>('All')
   const [searchValue, setSearchValue] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
   const deferredSearch = useDeferredValue(searchValue.trim().toLowerCase())
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setOpenMenuId(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => document.removeEventListener('mousedown', handlePointerDown)
+  }, [])
+
+  function duplicateEvent(card: StoredEvent) {
+    const duplicatedTitle = `${card.title} Copy`
+    const timestamp = Date.now()
+
+    upsertStoredEvent({
+      ...card,
+      id: createEventId(`${duplicatedTitle}-${timestamp}`),
+      title: duplicatedTitle,
+      status: 'Draft',
+    })
+
+    setOpenMenuId(null)
+  }
 
   const filteredCards = cards.filter((card) => {
     const matchesStatus = statusFilter === 'All' || card.status === statusFilter
@@ -148,9 +183,46 @@ export function EventsManagementPage() {
                   </span>
                 ) : null}
               </div>
-              <button className="icon-ghost-button" type="button">
-                <DotMenuIcon className="button-icon" />
-              </button>
+              <div className="toolbar-dropdown event-card__menu" ref={openMenuId === card.id ? menuRef : null}>
+                <button
+                  aria-expanded={openMenuId === card.id}
+                  aria-haspopup="menu"
+                  className="icon-ghost-button"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    setOpenMenuId((current) => (current === card.id ? null : card.id))
+                  }}
+                  type="button"
+                >
+                  <DotMenuIcon className="button-icon" />
+                </button>
+                {openMenuId === card.id ? (
+                  <div className="toolbar-dropdown__menu event-card__menu-panel" role="menu">
+                    <button
+                      onClick={() => {
+                        navigate(`/events/${card.id}`)
+                        setOpenMenuId(null)
+                      }}
+                      type="button"
+                    >
+                      Open Event
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate(`/events/${card.id}/edit`)
+                        setOpenMenuId(null)
+                      }}
+                      type="button"
+                    >
+                      Edit Event
+                    </button>
+                    <button onClick={() => duplicateEvent(card)} type="button">
+                      Duplicate Event
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <Link className="event-card__body" to={`/events/${card.id}`}>

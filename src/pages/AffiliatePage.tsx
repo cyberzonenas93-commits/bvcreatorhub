@@ -168,7 +168,7 @@ export function AffiliatePage() {
   }
 
   return (
-    <div className="dashboard-page dashboard-page--narrow utility-page">
+    <div className="dashboard-page dashboard-page--narrow utility-page affiliate-page">
       <section className="utility-page__header">
         <div>
           <h1>Affiliate</h1>

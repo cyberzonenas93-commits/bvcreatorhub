@@ -6,6 +6,7 @@ import {
   CalendarIcon,
   CardIcon,
   DocumentIcon,
+  InventoryIcon,
   LayersIcon,
   LinkIcon,
   MapPinIcon,
@@ -43,9 +44,10 @@ function SidebarItemIcon({ label }: { label: string }) {
       return <PackageIcon className="sidebar__icon-svg" />
     case 'Orders':
       return <DocumentIcon className="sidebar__icon-svg" />
+    case 'Inventory':
+      return <InventoryIcon className="sidebar__icon-svg" />
     case 'Risk':
     case 'Account Health':
-    case 'Inventory':
       return <AlertIcon className="sidebar__icon-svg" />
     case 'Collections':
     case 'Drops':
@@ -90,7 +92,11 @@ export function SidebarNav({
     <aside className={`sidebar${isMobileOpen ? ' sidebar--mobile-open' : ''}`} aria-label="Primary">
       <div className="sidebar__brand">
         <div className="sidebar__brand-copy">
-          <img className="sidebar__logo" src={brandMark} alt="Blacvolta mark" />
+          <img
+            className={`sidebar__logo${isMerchDashboard ? '' : ' sidebar__logo--ticketing'}`}
+            src={brandMark}
+            alt="Blacvolta mark"
+          />
           <span className="sidebar__title">{isMerchDashboard ? 'BV Creator Hub' : 'Admin Panel'}</span>
         </div>
 
@@ -111,7 +117,7 @@ export function SidebarNav({
             className={({ isActive }) =>
               `sidebar__link${isActive ? ' sidebar__link--active' : ''}`
             }
-            end={item.to === '/overview' || item.to === '/merch/analytics'}
+            end={item.to === '/dashboard' || item.to === '/merch/analytics'}
             onClick={onClose}
             to={item.to}
           >

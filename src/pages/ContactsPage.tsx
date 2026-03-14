@@ -7,7 +7,8 @@ import {
   PencilIcon,
   PlusIcon,
   SearchIcon,
-  UsersIcon,
+  SortArrowsIcon,
+  XIcon,
 } from '../components/ui/Icons'
 import { DashboardModal } from '../components/dashboard/Modal'
 import {
@@ -272,11 +273,34 @@ export function ContactsPage() {
   }
 
   return (
-    <div className="dashboard-page dashboard-page--narrow utility-page">
+    <div className="dashboard-page dashboard-page--narrow utility-page contacts-page">
       <section className="utility-page__header">
         <div>
           <h1>Contacts</h1>
           <p>Manage your attendees and customer base.</p>
+        </div>
+      </section>
+
+      <section className="contacts-toolbar">
+        <div className="segmented-control segmented-control--compact">
+          {[
+            ['all', 'All'],
+            ['VIP', 'VIP'],
+            ['Regular', 'Regular'],
+            ['recent', 'Recent'],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              className={filter === value ? 'segmented-control__option segmented-control__option--active' : 'segmented-control__option'}
+              onClick={() => {
+                setFilter(value as ContactFilter)
+                setPage(1)
+              }}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         <div className="utility-page__actions">
@@ -313,106 +337,156 @@ export function ContactsPage() {
         </div>
       </section>
 
-      <div className="segmented-control segmented-control--compact">
-        {[
-          ['all', 'All'],
-          ['VIP', 'VIP'],
-          ['Regular', 'Regular'],
-          ['recent', 'Recent'],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            className={filter === value ? 'segmented-control__option segmented-control__option--active' : 'segmented-control__option'}
-            onClick={() => {
-              setFilter(value as ContactFilter)
-              setPage(1)
-            }}
-            type="button"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <section className="table-shell utility-table">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Contact</th>
-              <th>Email</th>
-              <th>Total Spent</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageContacts.map((contact) => (
-              <tr key={contact.id}>
-                <td>
-                  <div className="person-cell">
-                    <ContactAvatar
-                      avatarUrl={contact.avatarUrl}
-                      className="avatar-chip"
-                      fallback={initialsFromName(contact.name)}
-                      name={contact.name}
-                    />
-                    <div className="name-stack">
-                      <strong>{contact.name}</strong>
-                      <span>{contact.phone}</span>
-                    </div>
-                  </div>
-                </td>
-                <td>{contact.email}</td>
-                <td>{formatCurrency(contact.totalSpent)}</td>
-                <td>
-                  <span className="status-dot" />
-                  {contact.status}
-                </td>
-                <td className="actions-cell">
-                  <button className="icon-action-button" onClick={() => openEditModal(contact)} type="button">
-                    <PencilIcon className="button-icon button-icon--muted" />
-                  </button>
-                  <button className="icon-action-button" onClick={() => setSelectedContact(contact)} type="button">
-                    <UsersIcon className="button-icon button-icon--muted" />
-                  </button>
-                  <button
-                    className="icon-action-button"
-                    onClick={() => downloadFile(`${contact.id}.csv`, buildCsv([contact]), 'text/csv;charset=utf-8')}
-                    type="button"
+      <section className={`contacts-layout${selectedContact ? ' contacts-layout--split' : ''}`}>
+        <div className="contacts-layout__table">
+          <section className="table-shell utility-table contacts-shell">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>
+                    <span className="table-heading">
+                      <span>Contact</span>
+                      <SortArrowsIcon className="table-heading__icon" />
+                    </span>
+                  </th>
+                  <th>
+                    <span className="table-heading">
+                      <span>Email</span>
+                      <SortArrowsIcon className="table-heading__icon" />
+                    </span>
+                  </th>
+                  <th>
+                    <span className="table-heading">
+                      <span>Total Spent</span>
+                      <SortArrowsIcon className="table-heading__icon" />
+                    </span>
+                  </th>
+                  <th>
+                    <span className="table-heading">
+                      <span>Status</span>
+                      <SortArrowsIcon className="table-heading__icon" />
+                    </span>
+                  </th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageContacts.map((contact) => (
+                  <tr
+                    className={selectedContact?.id === contact.id ? 'contacts-shell__row contacts-shell__row--selected' : 'contacts-shell__row'}
+                    key={contact.id}
+                    onClick={() => setSelectedContact(contact)}
                   >
-                    <DocumentIcon className="button-icon button-icon--accent" />
-                  </button>
-                  <button className="icon-action-button" onClick={() => (window.location.href = `mailto:${contact.email}`)} type="button">
-                    <PaperPlaneIcon className="button-icon button-icon--accent" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    <td>
+                      <div className="person-cell">
+                        <ContactAvatar
+                          avatarUrl={contact.avatarUrl}
+                          className="avatar-chip"
+                          fallback={initialsFromName(contact.name)}
+                          name={contact.name}
+                        />
+                        <div className="name-stack">
+                          <strong>{contact.name}</strong>
+                          <span>{contact.phone}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{contact.email}</td>
+                    <td>{formatCurrency(contact.totalSpent)}</td>
+                    <td>
+                      <span className="status-dot" />
+                      {contact.status}
+                    </td>
+                    <td className="actions-cell" onClick={(event) => event.stopPropagation()}>
+                      <button className="icon-action-button" onClick={() => openEditModal(contact)} type="button">
+                        <PencilIcon className="button-icon button-icon--muted" />
+                      </button>
+                      <button
+                        className="icon-action-button"
+                        onClick={() => downloadFile(`${contact.id}.csv`, buildCsv([contact]), 'text/csv;charset=utf-8')}
+                        type="button"
+                      >
+                        <DocumentIcon className="button-icon button-icon--accent" />
+                      </button>
+                      <button className="icon-action-button" onClick={() => (window.location.href = `mailto:${contact.email}`)} type="button">
+                        <PaperPlaneIcon className="button-icon button-icon--accent" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-        <div className="pager pager--compact">
-          <span className="pager__summary">
-            {filteredContacts.length === 0
-              ? '0-0 of 0 contacts'
-              : `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filteredContacts.length)} of ${filteredContacts.length} contacts`}
-          </span>
-          <div className="pager__controls">
-            <button disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} type="button">
-              ‹
-            </button>
-            <button className="pager__page pager__page--active" type="button">
-              {currentPage}
-            </button>
-            <button disabled={currentPage === totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))} type="button">
-              ›
-            </button>
-          </div>
-          <div className="pager__size">
-            <button type="button">5</button>
-            <span>Items per page</span>
-          </div>
+            <div className="pager pager--compact">
+              <span className="pager__summary">
+                {filteredContacts.length === 0
+                  ? '0-0 of 0 contacts'
+                  : `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filteredContacts.length)} of ${filteredContacts.length} contacts`}
+              </span>
+              <div className="pager__controls">
+                <button disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} type="button">
+                  ‹
+                </button>
+                <button className="pager__page pager__page--active" type="button">
+                  {currentPage}
+                </button>
+                <button disabled={currentPage === totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))} type="button">
+                  ›
+                </button>
+              </div>
+              <div className="pager__size">
+                <button type="button">5</button>
+                <span>Items per page</span>
+              </div>
+            </div>
+          </section>
         </div>
+
+        {selectedContact ? (
+          <aside className="contacts-detail-panel">
+            <div className="contacts-detail-panel__header">
+              <h2>Contact Details</h2>
+              <button className="icon-action-button" onClick={() => setSelectedContact(null)} type="button">
+                <XIcon className="button-icon button-icon--muted" />
+              </button>
+            </div>
+
+            <div className="contacts-detail-panel__hero">
+              <ContactAvatar
+                avatarUrl={selectedContact.avatarUrl}
+                className="contact-avatar-preview"
+                fallback={initialsFromName(selectedContact.name)}
+                name={selectedContact.name}
+              />
+              <strong>{selectedContact.name}</strong>
+              <span>{selectedContact.email}</span>
+            </div>
+
+            <div className="contacts-detail-panel__summary">
+              <div>
+                <span>Total Spent</span>
+                <strong>{formatCurrency(selectedContact.totalSpent)}</strong>
+              </div>
+              <div>
+                <span>Orders</span>
+                <strong>{Math.max(1, Math.round(selectedContact.totalSpent / 950))}</strong>
+              </div>
+            </div>
+
+            <div className="contacts-detail-panel__actions">
+              <button className="page-primary-cta page-primary-cta--full" onClick={() => (window.location.href = `mailto:${selectedContact.email}`)} type="button">
+                Send Email
+              </button>
+              <button
+                className="surface-button surface-button--wide"
+                onClick={() => downloadFile(`${selectedContact.id}.txt`, `${selectedContact.name}\n${selectedContact.email}\n${selectedContact.phone}`, 'text/plain')}
+                type="button"
+              >
+                View Purchase History
+              </button>
+            </div>
+          </aside>
+        ) : null}
       </section>
 
       {isContactModalOpen ? (
@@ -506,52 +580,6 @@ export function ContactsPage() {
         </DashboardModal>
       ) : null}
 
-      {selectedContact ? (
-        <DashboardModal
-          footer={
-            <button className="page-primary-cta page-primary-cta--compact" onClick={() => setSelectedContact(null)} type="button">
-              Close
-            </button>
-          }
-          onClose={() => setSelectedContact(null)}
-          title={selectedContact.name}
-        >
-          <div className="contact-detail-head">
-            <ContactAvatar
-              avatarUrl={selectedContact.avatarUrl}
-              className="contact-avatar-preview"
-              fallback={initialsFromName(selectedContact.name)}
-              name={selectedContact.name}
-            />
-            <div className="contact-detail-head__copy">
-              <strong>{selectedContact.name}</strong>
-              <span>{selectedContact.status}</span>
-            </div>
-          </div>
-          <div className="detail-summary-card">
-            <div>
-              <span>Email</span>
-              <strong>{selectedContact.email}</strong>
-            </div>
-            <div>
-              <span>Phone</span>
-              <strong>{selectedContact.phone}</strong>
-            </div>
-            <div>
-              <span>Total Spent</span>
-              <strong>{formatCurrency(selectedContact.totalSpent)}</strong>
-            </div>
-            <div>
-              <span>Segment</span>
-              <strong>{selectedContact.segment}</strong>
-            </div>
-            <div className="detail-summary-card__full">
-              <span>Notes</span>
-              <strong>{selectedContact.note || 'No notes yet.'}</strong>
-            </div>
-          </div>
-        </DashboardModal>
-      ) : null}
     </div>
   )
 }

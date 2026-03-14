@@ -6,12 +6,16 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeftIcon,
   CheckIcon,
+  CheckCircleIcon,
   ChevronRightIcon,
   ClockIcon,
   DocumentIcon,
   ImageIcon,
+  ShieldIcon,
   ShieldCheckIcon,
   UploadIcon,
+  UserIcon,
+  WalletIcon,
 } from '../components/ui/Icons'
 import {
   businessTypeOptions,
@@ -295,6 +299,12 @@ export function MerchantSetupPage() {
   }
 
   const currentStep = setupSteps[currentIndex]
+  const stepIcons = {
+    account: <UserIcon className="setup-stepper__icon" />,
+    verification: <ShieldIcon className="setup-stepper__icon" />,
+    payout: <WalletIcon className="setup-stepper__icon" />,
+    review: <CheckCircleIcon className="setup-stepper__icon" />,
+  } as const
   const isCurrentStepValid =
     currentStep.id === 'account'
       ? isAccountStepValid(setupData)
@@ -309,9 +319,9 @@ export function MerchantSetupPage() {
       setupData.payoutMethod === 'mobile-money' ? setupData.network : setupData.bankName
 
     return (
-      <main className="setup-page">
-        <div className="setup-shell setup-shell--success">
-          <section className="setup-card setup-card--success">
+      <main className="setup-page setup-page--ticketing">
+        <div className="setup-shell setup-shell--ticketing setup-shell--success">
+          <section className="setup-card setup-card--ticketing setup-card--success">
             <div className="setup-success">
               <span className="setup-success__icon">
                 <ShieldCheckIcon className="button-icon" />
@@ -470,8 +480,8 @@ export function MerchantSetupPage() {
         ]
 
   return (
-    <main className="setup-page">
-      <div className="setup-shell">
+    <main className="setup-page setup-page--ticketing">
+      <div className="setup-shell setup-shell--ticketing">
         <p className="setup-shell__eyebrow">Merchant Ticketing Dashboard</p>
 
         <nav aria-label="Merchant setup progress" className="setup-stepper">
@@ -494,7 +504,7 @@ export function MerchantSetupPage() {
                     {state === 'completed' ? (
                       <CheckIcon className="setup-stepper__check" />
                     ) : (
-                      index + 1
+                      stepIcons[setupStep.id]
                     )}
                   </span>
                   <span className="setup-stepper__label">{setupStep.label}</span>
@@ -510,7 +520,7 @@ export function MerchantSetupPage() {
           })}
         </nav>
 
-        <section className="setup-card">
+        <section className="setup-card setup-card--ticketing">
           <header className="setup-card__header">
             {currentStep.id === 'account' ? (
               <>

@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:ticketing": "npm run build && firebase deploy --only hosting --project blacvolta-2762a --config firebase.ticketing.json",
+    "deploy:merch": "npm run build && firebase deploy --only hosting --project blacvolta-2762a --config firebase.merch.json"
   },
   "dependencies": {
     "react": "^19.2.4",

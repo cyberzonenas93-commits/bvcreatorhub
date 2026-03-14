@@ -96,7 +96,7 @@ export function AnalyticsPage() {
   }
 
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page merch-analytics-page">
       <MerchPageHeader
         actions={[
           {

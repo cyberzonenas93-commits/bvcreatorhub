@@ -1,15 +1,21 @@
 import { useState } from 'react'
 
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 
 import { SidebarNav } from '../components/dashboard/SidebarNav'
 import { Topbar } from '../components/dashboard/Topbar'
 
 export function DashboardLayout() {
+  const location = useLocation()
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
+  const isTicketingShell = !location.pathname.startsWith('/merch')
 
   return (
-    <div className="dashboard-shell">
+    <div
+      className={`dashboard-shell${
+        isTicketingShell ? ' dashboard-shell--ticketing' : ' dashboard-shell--merch'
+      }`}
+    >
       <button
         aria-hidden={!isMobileNavOpen}
         aria-label="Close navigation"
