@@ -4893,6 +4893,9 @@ a {
 
 .notifications-popover__list {
   display: grid;
+  max-height: min(56vh, 360px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .notifications-item {
@@ -7093,9 +7096,63 @@ body {
   }
 
   .notifications-popover {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 64px);
     left: 12px;
     right: 12px;
     width: auto;
+    max-height: calc(100svh - env(safe-area-inset-top, 0px) - 84px);
+    border-radius: 16px;
+  }
+
+  .notifications-popover__header {
+    padding: 14px 14px 12px;
+  }
+
+  .notifications-popover__title h2 {
+    font-size: 15px;
+    line-height: 19px;
+  }
+
+  .notifications-popover__list {
+    max-height: calc(100svh - env(safe-area-inset-top, 0px) - 204px);
+  }
+
+  .notifications-item {
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .notifications-item__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+
+  .notifications-item__title-row {
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .notifications-item__title-row strong {
+    font-size: 13px;
+    line-height: 16px;
+  }
+
+  .notifications-item__title-row span,
+  .notifications-item__copy p {
+    font-size: 11px;
+    line-height: 15px;
+  }
+
+  .notifications-item__dot {
+    margin-top: 6px;
+  }
+
+  .notifications-popover__link {
+    padding: 14px;
+    font-size: 12px;
+    line-height: 16px;
   }
 
   .page-header__copy h1,
@@ -9184,10 +9241,11 @@ body {
 }
 
 .dashboard-shell--merch .sidebar__title {
-  font-family: var(--font-display);
-  font-size: 16px;
+  font-family: var(--font-sans);
+  font-size: 15px;
   line-height: 20px;
-  font-weight: 400;
+  font-weight: 500;
+  letter-spacing: -0.02em;
   color: #f8f9fa;
 }
 
@@ -9204,10 +9262,11 @@ body {
 }
 
 .dashboard-shell--merch .sidebar__link span {
-  font-family: var(--font-display);
+  font-family: var(--font-sans);
   font-size: 14px;
-  line-height: 18px;
-  font-weight: 400;
+  line-height: 19px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
 .dashboard-shell--merch .sidebar__icon-svg {
@@ -9611,6 +9670,15 @@ body {
 }
 
 @media (max-width: 900px) {
+  .dashboard-shell--ticketing {
+    --ui-font-scale: 1.08;
+  }
+
+  .dashboard-shell--ticketing,
+  .dashboard-shell--merch {
+    grid-template-columns: 1fr;
+  }
+
   .dashboard-shell--ticketing .dashboard-content {
     padding: 20px 16px 32px;
   }
@@ -9650,6 +9718,74 @@ body {
     min-width: 0;
   }
 
+  .dashboard-shell--ticketing .overview-page .page-header {
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .page-header__copy h1 {
+    font-size: 22px;
+    line-height: 28px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .page-header__copy p {
+    max-width: none;
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .page-header__actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .secondary-button,
+  .dashboard-shell--ticketing .overview-page .primary-button {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .dashboard-shell--ticketing .overview-page .secondary-button span,
+  .dashboard-shell--ticketing .overview-page .primary-button span {
+    white-space: nowrap;
+  }
+
+  .dashboard-shell--ticketing .overview-page .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-shell--ticketing .overview-page .stat-card {
+    min-height: auto;
+    padding: 18px;
+    gap: 16px;
+  }
+
+  .dashboard-shell--ticketing .chart-card {
+    gap: 18px;
+    padding: 16px;
+  }
+
+  .dashboard-shell--ticketing .chart-card .section-heading {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .dashboard-shell--ticketing .chart-legend {
+    width: 100%;
+    gap: 10px 14px;
+  }
+
+  .dashboard-shell--ticketing .table-card__header {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .dashboard-shell--ticketing .table-card__link {
+    align-self: flex-start;
+  }
+
   .dashboard-shell--merch .dashboard-content {
     padding: 20px 16px 32px;
   }
@@ -9658,9 +9794,17 @@ body {
   .dashboard-shell--merch .dashboard-page--narrow {
     width: 100%;
   }
+
+  .dashboard-shell--merch .topbar__menu-button {
+    display: inline-flex;
+  }
 }
 
 @media (max-width: 640px) {
+  .dashboard-shell--ticketing {
+    --ui-font-scale: 1;
+  }
+
   .auth-page--ticketing {
     padding: 44px 16px 56px;
   }
@@ -9681,6 +9825,153 @@ body {
 
   .dashboard-shell--ticketing .profile-chip__name {
     display: none;
+  }
+
+  .dashboard-shell--ticketing .dashboard-content {
+    padding: 14px 10px 22px;
+  }
+
+  .dashboard-shell--ticketing .sidebar,
+  .dashboard-shell--merch .sidebar {
+    width: min(88vw, 292px);
+  }
+
+  .dashboard-shell--ticketing .overview-page {
+    gap: 12px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .page-header__copy h1 {
+    font-size: 18px;
+    line-height: 23px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .page-header__copy p {
+    font-size: 11px;
+    line-height: 15px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .page-header__actions {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .secondary-button,
+  .dashboard-shell--ticketing .overview-page .primary-button {
+    min-height: 38px;
+    padding-inline: 12px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .secondary-button span,
+  .dashboard-shell--ticketing .overview-page .primary-button span {
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .stat-card {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .stat-card__header {
+    gap: 8px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .stat-card__icon {
+    width: 30px;
+    height: 30px;
+    padding: 6px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .stat-card__icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .stat-card__label {
+    font-size: 13px;
+    line-height: 17px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .stat-card__value {
+    font-size: 20px;
+    line-height: 26px;
+  }
+
+  .dashboard-shell--ticketing .overview-page .stat-card__helper {
+    font-size: 9px;
+    line-height: 12px;
+  }
+
+  .dashboard-shell--ticketing .chart-card {
+    padding: 12px 10px 14px;
+    gap: 14px;
+  }
+
+  .dashboard-shell--ticketing .chart-card .section-title {
+    font-size: 16px;
+    line-height: 21px;
+  }
+
+  .dashboard-shell--ticketing .chart-card .section-subtitle {
+    font-size: 10px;
+    line-height: 13px;
+  }
+
+  .dashboard-shell--ticketing .legend-item {
+    font-size: 10px;
+    line-height: 13px;
+  }
+
+  .dashboard-shell--ticketing .chart-svg {
+    min-height: 212px;
+  }
+
+  .dashboard-shell--ticketing .chart-axis-label {
+    font-size: 9px;
+  }
+
+  .dashboard-shell--ticketing .overview-page__menu {
+    top: calc(100% + 6px);
+    right: 0;
+    width: min(100%, 220px);
+  }
+
+  .dashboard-shell--ticketing .table-card__header {
+    padding: 12px 12px 10px;
+  }
+
+  .dashboard-shell--ticketing .table-card .section-title {
+    font-size: 16px;
+    line-height: 21px;
+  }
+
+  .dashboard-shell--ticketing .table-card__link {
+    font-size: 10px;
+    line-height: 13px;
+  }
+
+  .dashboard-shell--ticketing .registrations-table__mobile-sort {
+    padding: 0 10px 10px;
+  }
+
+  .dashboard-shell--ticketing .registrations-table tbody {
+    padding: 0 10px 10px;
+  }
+
+  .dashboard-shell--ticketing .registrations-table tbody tr {
+    gap: 8px;
+    border-radius: 12px;
+    padding: 10px;
+  }
+
+  .dashboard-shell--ticketing .registrations-table td::before {
+    flex-basis: 70px;
+    font-size: 9px;
+    line-height: 12px;
+  }
+
+  .dashboard-shell--ticketing .registrations-table td .customer-cell {
+    max-width: min(100%, 160px);
   }
 }
 
