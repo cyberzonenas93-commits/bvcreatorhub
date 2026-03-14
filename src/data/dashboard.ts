@@ -240,8 +240,8 @@ export const registrations: Registration[] = [
 export const chartFrame = {
   width: 1065,
   height: 350,
-  left: 65,
-  right: 65,
+  left: 92,
+  right: 72,
   top: 12,
   bottom: 35,
 }

@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { ActionSummaryModal } from '../components/dashboard/ActionSummaryModal'
 import { MerchPageHeader } from '../components/dashboard/MerchPageHeader'
 import { MetricsGrid, type DashboardMetric } from '../components/dashboard/MetricsGrid'
 import { StatusPill } from '../components/dashboard/StatusPill'
@@ -33,7 +35,7 @@ const customerStats: DashboardMetric[] = [
   {
     label: 'Repeat Rate',
     value: '38%',
-    helper: 'Customers returning for a second or third BlacVolta merch order',
+    helper: 'Customers returning for a second or third purchase from your store',
     delta: '+5.1%',
     icon: <TrendIcon className="metric-card__glyph" />,
     tone: 'success',
@@ -49,7 +51,7 @@ const customerStats: DashboardMetric[] = [
   {
     label: 'Fraud Watchlist',
     value: '9 accounts',
-    helper: 'High-risk profiles requiring blacklist or manual support review',
+    helper: 'Profiles that may need fraud checks or extra support follow-up',
     delta: '+2',
     icon: <MailIcon className="metric-card__glyph" />,
     tone: 'warning',
@@ -107,14 +109,15 @@ const supportTools = [
   'Customer profiles with purchase history and order context',
   'Average order value and repeat-purchase signals',
   'Location insights for fulfillment and curation decisions',
-  'Blacklist controls for fraud and abuse prevention',
+  'Buyer notes and fraud-prevention flags for sensitive orders',
 ]
 
 export function CustomersPage() {
   const navigate = useNavigate()
+  const [isSupportDeskOpen, setIsSupportDeskOpen] = useState(false)
 
   function exportCustomers() {
-    downloadCsv('blacvolta-customers.csv', [
+    downloadCsv('customers-and-insights.csv', [
       ['Name', 'Lifetime Value', 'Orders', 'Location', 'Status', 'Support'],
       ...customerRows.map((row) => [
         row.name,
@@ -132,8 +135,9 @@ export function CustomersPage() {
       <MerchPageHeader
         actions={[
           {
-            label: 'Support Desk',
+            label: 'Support Playbook',
             icon: <MailIcon className="merch-action-button__glyph" />,
+            onClick: () => setIsSupportDeskOpen(true),
           },
           {
             label: 'Export',
@@ -143,12 +147,12 @@ export function CustomersPage() {
           {
             label: 'Open Orders',
             icon: <TrendIcon className="merch-action-button__glyph" />,
-            onClick: () => navigate('/orders'),
+            onClick: () => navigate('/merch/orders'),
             variant: 'primary',
           },
         ]}
-        subtitle="Track shopper profiles, repeat behavior, support needs, and fraud risk across the marketplace."
-        title="Customer Management"
+        subtitle="Understand who is buying from your store, spot repeat customers, and stay on top of service follow-up."
+        title="Customers & Insights"
       />
 
       <MetricsGrid metrics={customerStats} />
@@ -159,7 +163,7 @@ export function CustomersPage() {
             <div>
               <h2 className="section-title">Customer Profiles</h2>
               <p className="section-subtitle">
-                Buyer visibility for support, loyalty, fraud checks, and fulfillment context.
+                A snapshot of your customers, repeat buyers, and support-sensitive orders.
               </p>
             </div>
           </div>
@@ -178,14 +182,16 @@ export function CustomersPage() {
               <tbody>
                 {customerRows.map((row) => (
                   <tr key={row.name}>
-                    <td>{row.name}</td>
-                    <td className="registrations-table__amount">{row.lifetimeValue}</td>
-                    <td>{row.orders}</td>
-                    <td>{row.location}</td>
-                    <td>
+                    <td data-label="Customer">{row.name}</td>
+                    <td className="registrations-table__amount" data-label="Lifetime Value">
+                      {row.lifetimeValue}
+                    </td>
+                    <td data-label="Orders">{row.orders}</td>
+                    <td data-label="Location">{row.location}</td>
+                    <td data-label="Status">
                       <StatusPill label={row.status} tone={row.tone} />
                     </td>
-                    <td>{row.support}</td>
+                    <td data-label="Support">{row.support}</td>
                   </tr>
                 ))}
               </tbody>
@@ -220,8 +226,8 @@ export function CustomersPage() {
           <article className="insight-card">
             <div className="insight-card__header">
               <div>
-                <p className="insight-card__eyebrow">Admin Tools</p>
-                <h2 className="section-title">Support Controls</h2>
+                <p className="insight-card__eyebrow">Support Tools</p>
+                <h2 className="section-title">How To Stay Responsive</h2>
               </div>
               <UsersIcon className="insight-card__headline-icon" />
             </div>
@@ -233,6 +239,28 @@ export function CustomersPage() {
           </article>
         </div>
       </section>
+
+      {isSupportDeskOpen ? (
+        <ActionSummaryModal
+          description="Use this playbook to respond faster, protect repeat buyers, and keep support issues from slowing future orders."
+          onClose={() => setIsSupportDeskOpen(false)}
+          onPrimaryAction={() => {
+            setIsSupportDeskOpen(false)
+            navigate('/merch/orders')
+          }}
+          primaryActionLabel="Open Orders"
+          sections={[
+            { title: 'Support Controls', items: supportTools },
+            {
+              title: 'Profiles Requiring Attention',
+              items: customerRows
+                .filter((row) => row.status !== 'VIP' && row.status !== 'Repeat Buyer')
+                .map((row) => `${row.name}: ${row.status} • ${row.support}`),
+            },
+          ]}
+          title="Support Playbook"
+        />
+      ) : null}
     </div>
   )
 }

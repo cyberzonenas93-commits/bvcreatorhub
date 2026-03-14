@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { ActionSummaryModal } from '../components/dashboard/ActionSummaryModal'
 import { MerchPageHeader } from '../components/dashboard/MerchPageHeader'
 import { MetricsGrid, type DashboardMetric } from '../components/dashboard/MetricsGrid'
 import {
@@ -15,7 +17,7 @@ const collectionStats: DashboardMetric[] = [
   {
     label: 'Active Collections',
     value: '18',
-    helper: 'Collections currently driving on-app merchandising',
+    helper: 'Collections currently driving discovery across your storefront and launch surfaces',
     delta: '+4',
     icon: <LayersIcon className="metric-card__glyph" />,
   },
@@ -30,7 +32,7 @@ const collectionStats: DashboardMetric[] = [
   {
     label: 'Featured Capsules',
     value: '5',
-    helper: 'Editorial-led premium collections receiving marketplace curation',
+    helper: 'Collections currently receiving stronger placement and shopper interest',
     delta: '+2',
     icon: <TrendIcon className="metric-card__glyph" />,
     tone: 'success',
@@ -38,7 +40,7 @@ const collectionStats: DashboardMetric[] = [
   {
     label: 'Event Merch Lines',
     value: '4',
-    helper: 'Drops linked to BlacVolta events and cultural moments',
+    helper: 'Drops linked to live moments, collaborations, and seasonal campaigns',
     delta: '+1',
     icon: <MegaphoneIcon className="metric-card__glyph" />,
     tone: 'info',
@@ -47,19 +49,19 @@ const collectionStats: DashboardMetric[] = [
 
 const collections = [
   {
-    name: 'Christie Brown Resort Edit',
+    name: 'Resort Edit',
     timing: 'Live now',
     note: 'Luxury resort silhouettes merchandised with editorial stories and matching accessories.',
   },
   {
-    name: 'Free The Youth Community Drop',
+    name: 'Weekend Capsule Drop',
     timing: 'Launches in 5 days',
-    note: 'Countdown-led capsule with creator previews, exclusive tees, and early waitlist access.',
+    note: 'Countdown-led capsule with preview content, limited stock, and early access links.',
   },
   {
-    name: 'AfroFuture Merch Capsule',
+    name: 'Holiday Occasion Edit',
     timing: 'Planning',
-    note: 'Event-linked merchandise with timed launch windows and bundled add-ons in content.',
+    note: 'Occasion-led collection planned with launch windows, gift bundles, and styled add-ons.',
   },
 ]
 
@@ -72,9 +74,10 @@ const launchChecklist = [
 
 export function CollectionsPage() {
   const navigate = useNavigate()
+  const [isDropCalendarOpen, setIsDropCalendarOpen] = useState(false)
 
   function exportCollections() {
-    downloadCsv('blacvolta-collections.csv', [
+    downloadCsv('collections-and-drops.csv', [
       ['Collection', 'Timing', 'Notes'],
       ...collections.map((collection) => [collection.name, collection.timing, collection.note]),
     ])
@@ -85,8 +88,9 @@ export function CollectionsPage() {
       <MerchPageHeader
         actions={[
           {
-            label: 'Drop Calendar',
+            label: 'Launch Calendar',
             icon: <CalendarIcon className="merch-action-button__glyph" />,
+            onClick: () => setIsDropCalendarOpen(true),
           },
           {
             label: 'Export',
@@ -94,14 +98,14 @@ export function CollectionsPage() {
             onClick: exportCollections,
           },
           {
-            label: 'Schedule Campaign',
+            label: 'Open Campaigns',
             icon: <MegaphoneIcon className="merch-action-button__glyph" />,
-            onClick: () => navigate('/promotions'),
+            onClick: () => navigate('/merch/promotions'),
             variant: 'primary',
           },
         ]}
-        subtitle="Shape capsule collections, limited releases, and event-linked merch into a cohesive launch calendar."
-        title="Collections & Drop Planning"
+        subtitle="Plan collections, timed drops, and launch windows that help your brand build anticipation and conversion."
+        title="Collections & Drops"
       />
 
       <MetricsGrid metrics={collectionStats} />
@@ -120,7 +124,7 @@ export function CollectionsPage() {
         <div className="insight-card__header">
           <div>
             <p className="insight-card__eyebrow">Launch Checklist</p>
-            <h2 className="section-title">Ready Every Collection For Drop Day</h2>
+            <h2 className="section-title">Prepare Every Collection For Drop Day</h2>
           </div>
           <LayersIcon className="insight-card__headline-icon" />
         </div>
@@ -130,6 +134,26 @@ export function CollectionsPage() {
           ))}
         </ul>
       </article>
+
+      {isDropCalendarOpen ? (
+        <ActionSummaryModal
+          description="Use your launch calendar to coordinate collection timing, stock readiness, and campaign support before a drop goes live."
+          onClose={() => setIsDropCalendarOpen(false)}
+          onPrimaryAction={() => {
+            setIsDropCalendarOpen(false)
+            navigate('/merch/promotions')
+          }}
+          primaryActionLabel="Open Campaigns"
+          sections={[
+            {
+              title: 'Upcoming Timeline',
+              items: collections.map((collection) => `${collection.name}: ${collection.timing}`),
+            },
+            { title: 'Launch Checklist', items: launchChecklist },
+          ]}
+          title="Launch Calendar"
+        />
+      ) : null}
     </div>
   )
 }

@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { ActionSummaryModal } from '../components/dashboard/ActionSummaryModal'
 import { MerchPageHeader } from '../components/dashboard/MerchPageHeader'
 import { MetricsGrid, type DashboardMetric } from '../components/dashboard/MetricsGrid'
 import { StatusPill } from '../components/dashboard/StatusPill'
@@ -16,7 +18,7 @@ const inventoryStats: DashboardMetric[] = [
   {
     label: 'Tracked SKUs',
     value: '1,124',
-    helper: 'All products with inventory visibility across brands and collections',
+    helper: 'All products with inventory visibility across your catalog, variants, and collections',
     delta: '+302',
     icon: <PackageIcon className="metric-card__glyph" />,
   },
@@ -50,7 +52,7 @@ const stockRows = [
   {
     sku: 'CB-RUNWAY-SHIRT-M',
     product: 'Runway Silk Shirt',
-    brand: 'Christie Brown',
+    brand: 'Resort Edit',
     stock: '12',
     status: 'Low Stock',
     tone: 'warning' as const,
@@ -58,7 +60,7 @@ const stockRows = [
   {
     sku: 'FTY-HOODIE-BLK-L',
     product: 'Community Code Hoodie',
-    brand: 'Free The Youth',
+    brand: 'Core Store',
     stock: '0',
     status: 'Out Of Stock',
     tone: 'danger' as const,
@@ -66,7 +68,7 @@ const stockRows = [
   {
     sku: 'BV-TOTE-CORE-OS',
     product: 'BV Creator Tote',
-    brand: 'BlacVolta Essentials',
+    brand: 'Creator Capsule',
     stock: '74',
     status: 'Healthy',
     tone: 'success' as const,
@@ -74,7 +76,7 @@ const stockRows = [
   {
     sku: 'CH-DRESS-HOLIDAY-S',
     product: 'Holiday Capsule Dress',
-    brand: 'Chocolate',
+    brand: 'Holiday Drop',
     stock: '18',
     status: 'Watchlist',
     tone: 'accent' as const,
@@ -83,16 +85,17 @@ const stockRows = [
 
 const inventoryRules = [
   'Automatic stock deduction immediately after successful purchase confirmation',
-  'Low stock and out-of-stock alerts routed to merchants and internal ops',
+  'Low-stock and out-of-stock alerts routed to your dashboard and team inboxes',
   'SKU-level tracking to support size and color variants',
   'Restock coordination tied to campaigns and collection relaunches',
 ]
 
 export function InventoryPage() {
   const navigate = useNavigate()
+  const [isAlertRulesOpen, setIsAlertRulesOpen] = useState(false)
 
   function exportInventory() {
-    downloadCsv('blacvolta-inventory.csv', [
+    downloadCsv('inventory.csv', [
       ['SKU', 'Product', 'Brand', 'Stock', 'Status'],
       ...stockRows.map((row) => [row.sku, row.product, row.brand, row.stock, row.status]),
     ])
@@ -103,8 +106,9 @@ export function InventoryPage() {
       <MerchPageHeader
         actions={[
           {
-            label: 'Alert Rules',
+            label: 'Low-Stock Rules',
             icon: <AlertIcon className="merch-action-button__glyph" />,
+            onClick: () => setIsAlertRulesOpen(true),
           },
           {
             label: 'Export',
@@ -112,14 +116,14 @@ export function InventoryPage() {
             onClick: exportInventory,
           },
           {
-            label: 'Plan Restock Campaign',
+            label: 'Open Campaigns',
             icon: <MegaphoneIcon className="merch-action-button__glyph" />,
-            onClick: () => navigate('/promotions'),
+            onClick: () => navigate('/merch/promotions'),
             variant: 'primary',
           },
         ]}
-        subtitle="Monitor stock health, protect live drops, and coordinate replenishment before conversion suffers."
-        title="Inventory & Stock Management"
+        subtitle="Track stock levels across your catalog, avoid sellouts, and restock winning products before campaigns or drops go live."
+        title="Inventory & Stock Control"
       />
 
       <MetricsGrid metrics={inventoryStats} />
@@ -130,7 +134,7 @@ export function InventoryPage() {
             <div>
               <h2 className="section-title">Stock Watch List</h2>
               <p className="section-subtitle">
-                Inventory visibility for fast-moving styles, size variants, and launch-sensitive SKUs.
+                Inventory visibility for your fast-moving styles, size variants, and launch-sensitive SKUs.
               </p>
             </div>
           </div>
@@ -140,7 +144,7 @@ export function InventoryPage() {
                 <tr>
                   <th>SKU</th>
                   <th>Product</th>
-                  <th>Brand</th>
+                  <th>Collection</th>
                   <th>Stock</th>
                   <th>Status</th>
                 </tr>
@@ -148,11 +152,11 @@ export function InventoryPage() {
               <tbody>
                 {stockRows.map((row) => (
                   <tr key={row.sku}>
-                    <td>{row.sku}</td>
-                    <td>{row.product}</td>
-                    <td>{row.brand}</td>
-                    <td>{row.stock}</td>
-                    <td>
+                    <td data-label="SKU">{row.sku}</td>
+                    <td data-label="Product">{row.product}</td>
+                    <td data-label="Collection">{row.brand}</td>
+                    <td data-label="Stock">{row.stock}</td>
+                    <td data-label="Status">
                       <StatusPill label={row.status} tone={row.tone} />
                     </td>
                   </tr>
@@ -165,8 +169,8 @@ export function InventoryPage() {
         <article className="insight-card">
           <div className="insight-card__header">
             <div>
-              <p className="insight-card__eyebrow">Inventory Logic</p>
-              <h2 className="section-title">Operational Safeguards</h2>
+                <p className="insight-card__eyebrow">Inventory Logic</p>
+                <h2 className="section-title">Stock Safeguards</h2>
             </div>
             <PackageIcon className="insight-card__headline-icon" />
           </div>
@@ -177,6 +181,28 @@ export function InventoryPage() {
           </ul>
         </article>
       </section>
+
+      {isAlertRulesOpen ? (
+        <ActionSummaryModal
+          description="Use low-stock alerts to stay ahead of sellouts and protect your best-performing products."
+          onClose={() => setIsAlertRulesOpen(false)}
+          onPrimaryAction={() => {
+            setIsAlertRulesOpen(false)
+            navigate('/merch/promotions')
+          }}
+          primaryActionLabel="Open Campaigns"
+          sections={[
+            { title: 'Alert Logic', items: inventoryRules },
+            {
+              title: 'Current Watch List',
+              items: stockRows
+                .filter((row) => row.status !== 'Healthy')
+                .map((row) => `${row.product}: ${row.status} • ${row.stock} units`),
+            },
+          ]}
+          title="Low-Stock Rules"
+        />
+      ) : null}
     </div>
   )
 }

@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { ActionSummaryModal } from '../components/dashboard/ActionSummaryModal'
 import { MerchChartCard } from '../components/dashboard/MerchChartCard'
 import { MerchPageHeader } from '../components/dashboard/MerchPageHeader'
 import { MetricsGrid, type DashboardMetric } from '../components/dashboard/MetricsGrid'
@@ -14,33 +16,33 @@ import { downloadCsv } from '../lib/download'
 
 const analyticsStats: DashboardMetric[] = [
   {
-    label: 'Revenue Generated',
-    value: 'GH₵8.44M',
-    helper: 'Rolling 12-month marketplace GMV across all merch programs',
-    delta: '+29.3%',
+    label: 'Gross Sales',
+    value: 'GH₵684k',
+    helper: 'Total sales processed through your storefront across direct orders, drops, and content commerce.',
+    delta: '+18.4%',
     icon: <WalletIcon className="metric-card__glyph" />,
   },
   {
     label: 'Units Sold',
-    value: '16,482',
-    helper: 'Products fulfilled across direct catalog and content-led journeys',
-    delta: '+22.1%',
+    value: '1,836',
+    helper: 'Paid units sold across your catalog during the current rolling period.',
+    delta: '+12.7%',
     icon: <PackageIcon className="metric-card__glyph" />,
     tone: 'success',
   },
   {
     label: 'Conversion Rate',
-    value: '4.9%',
-    helper: 'Sessions converting into an order on the merch marketplace',
-    delta: '+0.8%',
+    value: '4.8%',
+    helper: 'Sessions that converted into completed orders across your storefront and product links.',
+    delta: '+0.9%',
     icon: <TrendIcon className="metric-card__glyph" />,
     tone: 'info',
   },
   {
-    label: 'Cart Abandonment',
-    value: '27%',
-    helper: 'Users who added merch to cart without completing checkout',
-    delta: '-3.4%',
+    label: 'Returning Customers',
+    value: '38%',
+    helper: 'Shoppers who came back for another purchase from your brand.',
+    delta: '+5.1%',
     icon: <LinkIcon className="metric-card__glyph" />,
     tone: 'warning',
   },
@@ -62,24 +64,32 @@ const analyticsSeries = [
 ]
 
 const trafficSources = [
-  { label: 'Editorial stories', value: '32%' },
-  { label: 'Brand pages', value: '24%' },
-  { label: 'Creator content', value: '18%' },
-  { label: 'Event surfaces', value: '14%' },
-  { label: 'Podcasts & stories', value: '12%' },
+  { label: 'Instagram', value: '31%' },
+  { label: 'Marketplace app', value: '26%' },
+  { label: 'Direct links', value: '18%' },
+  { label: 'Search', value: '14%' },
+  { label: 'Creator links', value: '11%' },
 ]
 
 const topProducts = [
-  'Christie Brown Resort Edit',
-  'Free The Youth Community Hoodie',
+  'Runway Silk Shirt',
+  'Holiday Capsule Dress',
   'BV Creator Tote',
+]
+
+const revenueModelItems = [
+  'Track which traffic channels bring the highest-value shoppers into your store.',
+  'Compare top products, returning customers, and conversion before planning your next drop.',
+  'Watch payout timing against campaign launches so stock and settlement stay aligned.',
+  'Use content links and creator placements to bring more buyers into your storefront.',
 ]
 
 export function AnalyticsPage() {
   const navigate = useNavigate()
+  const [isRevenueModelOpen, setIsRevenueModelOpen] = useState(false)
 
   function exportAnalytics() {
-    downloadCsv('blacvolta-analytics.csv', [
+    downloadCsv('store-performance.csv', [
       ['Month', 'Revenue', 'Units Sold'],
       ...analyticsSeries.map((point) => [point.label, String(point.primary), String(point.secondary)]),
     ])
@@ -90,8 +100,9 @@ export function AnalyticsPage() {
       <MerchPageHeader
         actions={[
           {
-            label: 'Attribution',
+            label: 'Performance Tips',
             icon: <LinkIcon className="merch-action-button__glyph" />,
+            onClick: () => setIsRevenueModelOpen(true),
           },
           {
             label: 'Export',
@@ -99,14 +110,14 @@ export function AnalyticsPage() {
             onClick: exportAnalytics,
           },
           {
-            label: 'Open Overview',
+            label: 'View Payouts',
             icon: <TrendIcon className="merch-action-button__glyph" />,
-            onClick: () => navigate('/overview'),
+            onClick: () => navigate('/merch/payments'),
             variant: 'primary',
           },
         ]}
-        subtitle="Revenue, demand, conversion, and traffic patterns to help merchants understand what is moving the marketplace."
-        title="Analytics & Performance Dashboard"
+        subtitle="Track your sales, best-performing products, returning customers, and traffic sources from one vendor dashboard."
+        title="Store Performance Overview"
       />
 
       <MetricsGrid metrics={analyticsStats} />
@@ -115,14 +126,14 @@ export function AnalyticsPage() {
         formatPrimaryTick={(value) => `GH₵${Math.round(value / 1000)}k`}
         formatPrimaryValue={(value) => `GH₵${value.toLocaleString('en-US')}`}
         formatSecondaryTick={(value) => `${Math.round(value)}`}
-        formatSecondaryValue={(value) => `${value.toLocaleString('en-US')} units`}
+        formatSecondaryValue={(value) => `${value.toLocaleString('en-US')} orders`}
         points={analyticsSeries}
-        primaryLabel="Revenue"
+        primaryLabel="Sales"
         primaryStep={200000}
-        secondaryLabel="Units Sold"
+        secondaryLabel="Orders"
         secondaryStep={500}
-        subtitle="Revenue growth compared with item demand across the last 12 months."
-        title="Revenue Trends"
+        subtitle="Monthly sales compared with order volume across your storefront."
+        title="Sales & Order Trend"
       />
 
       <section className="split-grid">
@@ -130,12 +141,12 @@ export function AnalyticsPage() {
           <div className="insight-card__header">
             <div>
               <p className="insight-card__eyebrow">Traffic Sources</p>
-              <h2 className="section-title">Where Discovery Starts</h2>
+              <h2 className="section-title">Where Shoppers Find You</h2>
             </div>
             <TrendIcon className="insight-card__headline-icon" />
           </div>
           <ul className="source-list">
-            {trafficSources.map((source) => (
+              {trafficSources.map((source) => (
               <li key={source.label} className="source-list__item">
                 <div className="source-list__meta">
                   <span>{source.label}</span>
@@ -152,8 +163,8 @@ export function AnalyticsPage() {
         <article className="insight-card">
           <div className="insight-card__header">
             <div>
-              <p className="insight-card__eyebrow">Top Performing Products</p>
-              <h2 className="section-title">Current Leaders</h2>
+              <p className="insight-card__eyebrow">Top Selling Products</p>
+              <h2 className="section-title">What Is Moving Fastest</h2>
             </div>
             <PackageIcon className="insight-card__headline-icon" />
           </div>
@@ -164,6 +175,23 @@ export function AnalyticsPage() {
           </ul>
         </article>
       </section>
+
+      {isRevenueModelOpen ? (
+        <ActionSummaryModal
+          description="Use your overview to understand what is selling, where shoppers are coming from, and when to push your next campaign."
+          onClose={() => setIsRevenueModelOpen(false)}
+          onPrimaryAction={() => {
+            setIsRevenueModelOpen(false)
+            navigate('/merch/payments')
+          }}
+          primaryActionLabel="View Payouts"
+          sections={[
+            { title: 'Performance Tips', items: revenueModelItems },
+            { title: 'Current Traffic Mix', items: trafficSources.map((source) => `${source.label}: ${source.value}`) },
+          ]}
+          title="Performance Tips"
+        />
+      ) : null}
     </div>
   )
 }

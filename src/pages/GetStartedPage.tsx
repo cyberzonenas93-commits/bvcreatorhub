@@ -147,7 +147,7 @@ export function GetStartedPage() {
       <div className="auth-page__inner">
         <div className="auth-page__brand">
           <img className="auth-page__brand-icon" src={brandMark} alt="Black Volta logo" />
-          <span className="auth-page__brand-text">Merchant Dashboard</span>
+          <span className="auth-page__brand-text">BV Creator Hub</span>
         </div>
 
         <div className="auth-page__hero">

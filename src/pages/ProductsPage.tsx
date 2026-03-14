@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { ActionSummaryModal } from '../components/dashboard/ActionSummaryModal'
 import { MerchPageHeader } from '../components/dashboard/MerchPageHeader'
 import { MetricsGrid, type DashboardMetric } from '../components/dashboard/MetricsGrid'
 import { StatusPill } from '../components/dashboard/StatusPill'
@@ -26,32 +28,32 @@ type ProductRow = {
 const productStats: DashboardMetric[] = [
   {
     label: 'Live Products',
-    value: '486',
-    helper: 'Approved and currently visible in the marketplace',
-    delta: '+38',
+    value: '48',
+    helper: 'Products currently visible in your storefront and collection pages.',
+    delta: '+6',
     icon: <PackageIcon className="metric-card__glyph" />,
   },
   {
-    label: 'Drafts Awaiting Review',
-    value: '27',
-    helper: 'Merchant-submitted listings pending admin approval',
-    delta: '+9',
+    label: 'Draft Products',
+    value: '6',
+    helper: 'Styles still being prepared with media, copy, or pricing before launch.',
+    delta: '+2',
     icon: <TagIcon className="metric-card__glyph" />,
     tone: 'warning',
   },
   {
-    label: 'Limited Drops',
-    value: '14',
-    helper: 'Launch-mode collections with timed access windows',
-    delta: '+5',
+    label: 'Low Stock SKUs',
+    value: '4',
+    helper: 'Variants that may need a restock before your next campaign or drop.',
+    delta: '+1',
     icon: <TrendIcon className="metric-card__glyph" />,
     tone: 'success',
   },
   {
-    label: 'Creator Capsules',
-    value: '6',
-    helper: 'Merch collections linked to artists, DJs, and tastemakers',
-    delta: '+2',
+    label: 'Active Collections',
+    value: '7',
+    helper: 'Collections, capsules, and limited drops currently tied to your catalog.',
+    delta: '+1',
     icon: <LayersIcon className="metric-card__glyph" />,
     tone: 'info',
   },
@@ -60,16 +62,16 @@ const productStats: DashboardMetric[] = [
 const productRows: ProductRow[] = [
   {
     name: 'Runway Silk Shirt',
-    brand: 'Christie Brown',
+    brand: 'Resort Edit',
     category: 'Shirts',
     price: 'GH₵780',
     stock: '42 units',
-    status: 'Approved',
+    status: 'Live',
     tone: 'success',
   },
   {
     name: 'Community Code Hoodie',
-    brand: 'Free The Youth',
+    brand: 'Core Store',
     category: 'Hoodies',
     price: 'GH₵460',
     stock: '18 units',
@@ -78,7 +80,7 @@ const productRows: ProductRow[] = [
   },
   {
     name: 'BV Creator Tote',
-    brand: 'BlacVolta Essentials',
+    brand: 'Creator Capsule',
     category: 'Accessories',
     price: 'GH₵220',
     stock: '74 units',
@@ -87,11 +89,11 @@ const productRows: ProductRow[] = [
   },
   {
     name: 'Holiday Capsule Dress',
-    brand: 'Chocolate',
+    brand: 'Holiday Drop',
     category: 'Dresses',
     price: 'GH₵1,150',
     stock: 'Preorder',
-    status: 'Pending Review',
+    status: 'Draft',
     tone: 'accent',
   },
 ]
@@ -114,9 +116,10 @@ const collectionTypes = [
 
 export function ProductsPage() {
   const navigate = useNavigate()
+  const [isCatalogRulesOpen, setIsCatalogRulesOpen] = useState(false)
 
   function exportProducts() {
-    downloadCsv('blacvolta-products.csv', [
+    downloadCsv('product-catalog.csv', [
       ['Product', 'Brand', 'Category', 'Price', 'Stock', 'Status'],
       ...productRows.map((row) => [row.name, row.brand, row.category, row.price, row.stock, row.status]),
     ])
@@ -127,8 +130,9 @@ export function ProductsPage() {
       <MerchPageHeader
         actions={[
           {
-            label: 'Catalog Rules',
+            label: 'Catalog Tips',
             icon: <TagIcon className="merch-action-button__glyph" />,
+            onClick: () => setIsCatalogRulesOpen(true),
           },
           {
             label: 'Export',
@@ -136,14 +140,14 @@ export function ProductsPage() {
             onClick: exportProducts,
           },
           {
-            label: 'Plan Promotion',
+            label: 'Open Campaigns',
             icon: <MegaphoneIcon className="merch-action-button__glyph" />,
-            onClick: () => navigate('/promotions'),
+            onClick: () => navigate('/merch/promotions'),
             variant: 'primary',
           },
         ]}
-        subtitle="Approve products, manage rich product content, and stage collections for premium brand storytelling."
-        title="Product & Collection Management"
+        subtitle="Create, organize, and track the products shoppers see across your storefront, drops, and content commerce placements."
+        title="Product Catalog & Merchandising"
       />
 
       <MetricsGrid metrics={productStats} />
@@ -152,9 +156,9 @@ export function ProductsPage() {
         <section className="table-card">
           <div className="table-card__header">
             <div>
-              <h2 className="section-title">Product Approval Queue</h2>
+              <h2 className="section-title">Product Library</h2>
               <p className="section-subtitle">
-                The core merchant authoring model from the epic, translated into the merch dashboard.
+                Your current product library, including live listings, featured products, and in-progress drafts.
               </p>
             </div>
           </div>
@@ -163,7 +167,7 @@ export function ProductsPage() {
               <thead>
                 <tr>
                   <th>Product</th>
-                  <th>Brand</th>
+                  <th>Collection</th>
                   <th>Category</th>
                   <th>Price</th>
                   <th>Stock</th>
@@ -173,12 +177,14 @@ export function ProductsPage() {
               <tbody>
                 {productRows.map((row) => (
                   <tr key={row.name}>
-                    <td>{row.name}</td>
-                    <td>{row.brand}</td>
-                    <td>{row.category}</td>
-                    <td className="registrations-table__amount">{row.price}</td>
-                    <td>{row.stock}</td>
-                    <td>
+                    <td data-label="Product">{row.name}</td>
+                    <td data-label="Collection">{row.brand}</td>
+                    <td data-label="Category">{row.category}</td>
+                    <td className="registrations-table__amount" data-label="Price">
+                      {row.price}
+                    </td>
+                    <td data-label="Stock">{row.stock}</td>
+                    <td data-label="Status">
                       <StatusPill label={row.status} tone={row.tone} />
                     </td>
                   </tr>
@@ -193,7 +199,7 @@ export function ProductsPage() {
             <div className="insight-card__header">
               <div>
                 <p className="insight-card__eyebrow">Product Authoring</p>
-                <h2 className="section-title">Required Fields</h2>
+                <h2 className="section-title">Publishing Checklist</h2>
               </div>
               <PackageIcon className="insight-card__headline-icon" />
             </div>
@@ -220,6 +226,27 @@ export function ProductsPage() {
           </article>
         </div>
       </section>
+
+      {isCatalogRulesOpen ? (
+        <ActionSummaryModal
+          description="Use these publishing tips to keep your catalog ready for launches, campaigns, and feature placements."
+          onClose={() => setIsCatalogRulesOpen(false)}
+          onPrimaryAction={() => {
+            setIsCatalogRulesOpen(false)
+            navigate('/merch/promotions')
+          }}
+          primaryActionLabel="Open Campaigns"
+          sections={[
+            { title: 'Publishing Checklist', items: productFields },
+            { title: 'Merch Programs', items: collectionTypes },
+            {
+              title: 'Catalog Snapshot',
+              items: productRows.map((row) => `${row.name}: ${row.status} • ${row.stock}`),
+            },
+          ]}
+          title="Catalog Tips"
+        />
+      ) : null}
     </div>
   )
 }

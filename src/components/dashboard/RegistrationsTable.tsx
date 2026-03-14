@@ -52,6 +52,10 @@ export function RegistrationsTable() {
 
   const sortedRegistrations = useMemo(() => sortRegistrations(registrations, sortKey), [sortKey])
 
+  function handleSort(nextSortKey: SortKey) {
+    setSortKey((current) => (current === nextSortKey ? null : nextSortKey))
+  }
+
   return (
     <section className="table-card" aria-labelledby="registrations-title">
       <div className="table-card__header">
@@ -64,21 +68,28 @@ export function RegistrationsTable() {
         </Link>
       </div>
 
+      <div className="registrations-table__mobile-sort" aria-label="Sort recent registrations">
+        <SortHeader activeKey={sortKey} label="Customer" onClick={handleSort} sortKey="customer" />
+        <SortHeader activeKey={sortKey} label="Event" onClick={handleSort} sortKey="event" />
+        <SortHeader activeKey={sortKey} label="Tickets" onClick={handleSort} sortKey="tickets" />
+        <SortHeader activeKey={sortKey} label="Amount" onClick={handleSort} sortKey="amount" />
+      </div>
+
       <div className="table-scroll">
         <table className="registrations-table">
           <thead>
             <tr>
               <th>
-                <SortHeader activeKey={sortKey} label="Customer" onClick={setSortKey} sortKey="customer" />
+                <SortHeader activeKey={sortKey} label="Customer" onClick={handleSort} sortKey="customer" />
               </th>
               <th>
-                <SortHeader activeKey={sortKey} label="Event" onClick={setSortKey} sortKey="event" />
+                <SortHeader activeKey={sortKey} label="Event" onClick={handleSort} sortKey="event" />
               </th>
               <th>
-                <SortHeader activeKey={sortKey} label="Tickets" onClick={setSortKey} sortKey="tickets" />
+                <SortHeader activeKey={sortKey} label="Tickets" onClick={handleSort} sortKey="tickets" />
               </th>
               <th>
-                <SortHeader activeKey={sortKey} label="Amount" onClick={setSortKey} sortKey="amount" />
+                <SortHeader activeKey={sortKey} label="Amount" onClick={handleSort} sortKey="amount" />
               </th>
               <th>Actions</th>
             </tr>
@@ -86,16 +97,18 @@ export function RegistrationsTable() {
           <tbody>
             {sortedRegistrations.map((registration) => (
               <tr key={`${registration.customer}-${registration.date}`}>
-                <td>
+                <td data-label="Customer">
                   <div className="customer-cell">
                     <span className="customer-cell__avatar">{registration.initials}</span>
                     <span className="customer-cell__name">{registration.customer}</span>
                   </div>
                 </td>
-                <td>{registration.event}</td>
-                <td>{registration.tickets}</td>
-                <td className="registrations-table__amount">{registration.amountLabel}</td>
-                <td className="actions-cell">
+                <td data-label="Event">{registration.event}</td>
+                <td data-label="Tickets">{registration.tickets}</td>
+                <td className="registrations-table__amount" data-label="Amount">
+                  {registration.amountLabel}
+                </td>
+                <td className="actions-cell" data-label="Actions">
                   <Link className="icon-action-button" to={`/events/${registration.eventId}/${registration.tab}`}>
                     <PencilIcon className="button-icon button-icon--muted" />
                   </Link>

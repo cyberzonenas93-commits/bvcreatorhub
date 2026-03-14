@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
+import { ActionSummaryModal } from '../components/dashboard/ActionSummaryModal'
 import { MerchPageHeader } from '../components/dashboard/MerchPageHeader'
 import { MetricsGrid, type DashboardMetric } from '../components/dashboard/MetricsGrid'
 import { StatusPill } from '../components/dashboard/StatusPill'
@@ -26,33 +28,33 @@ type OrderRow = {
 
 const orderStats: DashboardMetric[] = [
   {
-    label: 'Pending Orders',
-    value: '38',
-    helper: 'New order volume waiting for merchant processing',
-    delta: '+12',
+    label: 'New Orders',
+    value: '18',
+    helper: 'Freshly paid orders waiting for confirmation, packing, or fulfillment.',
+    delta: '+6',
     icon: <DocumentIcon className="metric-card__glyph" />,
   },
   {
-    label: 'Processing',
-    value: '64',
-    helper: 'Orders currently being packed or routed for shipment',
-    delta: '+8',
+    label: 'Ready To Ship',
+    value: '12',
+    helper: 'Orders with payment cleared and inventory allocated for fulfillment.',
+    delta: '+3',
     icon: <TrendIcon className="metric-card__glyph" />,
     tone: 'warning',
   },
   {
-    label: 'Shipped This Week',
-    value: '112',
-    helper: 'Marketplace fulfillment volume with tracking attached',
-    delta: '+21',
+    label: 'Delivered This Week',
+    value: '47',
+    helper: 'Orders that reached customers successfully during the current week.',
+    delta: '+9',
     icon: <UsersIcon className="metric-card__glyph" />,
     tone: 'success',
   },
   {
-    label: 'Returns Rate',
-    value: '2.8%',
-    helper: 'Returned or refunded orders requiring review',
-    delta: '-0.4%',
+    label: 'Open Returns',
+    value: '2',
+    helper: 'Orders currently in return or refund review with your team.',
+    delta: '-1',
     icon: <MailIcon className="metric-card__glyph" />,
     tone: 'info',
   },
@@ -62,22 +64,22 @@ const statusColumns = [
   {
     title: 'Pending',
     tone: 'accent' as const,
-    items: ['#BV-2401 Christie Brown edit', '#BV-2405 Free The Youth tee'],
+    items: ['#BV-2401 Resort Edit dress', '#BV-2405 Silk shirt reorder'],
   },
   {
     title: 'Paid',
     tone: 'success' as const,
-    items: ['#BV-2396 BlacVolta hoodie bundle', '#BV-2398 Chocolate preorder'],
+    items: ['#BV-2396 Core essentials set', '#BV-2398 Holiday preorder'],
   },
   {
     title: 'Processing',
     tone: 'warning' as const,
-    items: ['#BV-2388 Brill resort capsule', '#BV-2393 Creator tote drop'],
+    items: ['#BV-2388 Resort capsule order', '#BV-2393 Creator tote bundle'],
   },
   {
     title: 'Shipped',
     tone: 'info' as const,
-    items: ['#BV-2381 AfroFuture merch pack', '#BV-2384 Christie Brown dress'],
+    items: ['#BV-2381 Event capsule pack', '#BV-2384 Holiday dress order'],
   },
   {
     title: 'Delivered',
@@ -95,7 +97,7 @@ const orderRows: OrderRow[] = [
   {
     id: '#BV-2401',
     customer: 'Ama Mensah',
-    brand: 'Christie Brown',
+    brand: 'Resort Edit',
     status: 'Processing',
     tone: 'warning',
     amount: 'GH₵1,460',
@@ -105,7 +107,7 @@ const orderRows: OrderRow[] = [
   {
     id: '#BV-2396',
     customer: 'Kwesi Laryea',
-    brand: 'BlacVolta Essentials',
+    brand: 'Core Store',
     status: 'Paid',
     tone: 'success',
     amount: 'GH₵680',
@@ -115,7 +117,7 @@ const orderRows: OrderRow[] = [
   {
     id: '#BV-2384',
     customer: 'Efua Bannerman',
-    brand: 'Brill',
+    brand: 'Holiday Drop',
     status: 'Shipped',
     tone: 'info',
     amount: 'GH₵940',
@@ -125,7 +127,7 @@ const orderRows: OrderRow[] = [
   {
     id: '#BV-2368',
     customer: 'Yaw Frimpong',
-    brand: 'Free The Youth',
+    brand: 'Creator Capsule',
     status: 'Returned',
     tone: 'danger',
     amount: 'GH₵460',
@@ -135,17 +137,18 @@ const orderRows: OrderRow[] = [
 ]
 
 const adminTools = [
-  'Search orders and filter by brand, date, or status',
-  'Manage refunds without leaving the operations desk',
-  'View customer details and delivery context inline',
-  'Escalate returns and exceptions to support instantly',
+  'Search orders and filter by date, status, or shipping stage',
+  'Review returns and refunds without leaving your order queue',
+  'Open customer details quickly when a shipment needs support',
+  'Keep fulfillment, returns, and delivery follow-up in one place',
 ]
 
 export function OrdersPage() {
   const navigate = useNavigate()
+  const [isRefundQueueOpen, setIsRefundQueueOpen] = useState(false)
 
   function exportOrders() {
-    downloadCsv('blacvolta-orders.csv', [
+    downloadCsv('orders-and-fulfillment.csv', [
       ['Order', 'Customer', 'Brand', 'Status', 'Amount', 'Refund'],
       ...orderRows.map((row) => [row.id, row.customer, row.brand, row.status, row.amount, row.refund]),
     ])
@@ -156,8 +159,9 @@ export function OrdersPage() {
       <MerchPageHeader
         actions={[
           {
-            label: 'Refund Queue',
+            label: 'Returns & Refunds',
             icon: <DocumentIcon className="merch-action-button__glyph" />,
+            onClick: () => setIsRefundQueueOpen(true),
           },
           {
             label: 'Export',
@@ -165,14 +169,14 @@ export function OrdersPage() {
             onClick: exportOrders,
           },
           {
-            label: 'Review Customers',
+            label: 'Open Customers',
             icon: <UsersIcon className="merch-action-button__glyph" />,
-            onClick: () => navigate('/customers'),
+            onClick: () => navigate('/merch/customers'),
             variant: 'primary',
           },
         ]}
-        subtitle="Centralized order tracking for purchases, refunds, delivery milestones, and customer follow-up."
-        title="Order Management System"
+        subtitle="Track every order from payment through delivery, handle returns, and keep your fulfillment flow on schedule."
+        title="Orders & Fulfillment"
       />
 
       <MetricsGrid metrics={orderStats} />
@@ -201,11 +205,11 @@ export function OrdersPage() {
             <div>
               <h2 className="section-title">Operational Queue</h2>
               <p className="section-subtitle">
-                Search, filter, refund, and resolve customer issues from one merch operations surface.
+                Your active order queue, including shipment progress, returns, and customer follow-up.
               </p>
             </div>
-            <Link className="table-card__link" to="/customers">
-              <span>Customer profiles</span>
+            <Link className="table-card__link" to="/merch/customers">
+              <span>Customer details</span>
               <TrendIcon className="merch-inline-icon" />
             </Link>
           </div>
@@ -215,7 +219,7 @@ export function OrdersPage() {
                 <tr>
                   <th>Order</th>
                   <th>Customer</th>
-                  <th>Brand</th>
+                  <th>Collection</th>
                   <th>Status</th>
                   <th>Amount</th>
                   <th>Refund</th>
@@ -225,16 +229,18 @@ export function OrdersPage() {
               <tbody>
                 {orderRows.map((row) => (
                   <tr key={row.id}>
-                    <td>{row.id}</td>
-                    <td>{row.customer}</td>
-                    <td>{row.brand}</td>
-                    <td>
+                    <td data-label="Order">{row.id}</td>
+                    <td data-label="Customer">{row.customer}</td>
+                    <td data-label="Collection">{row.brand}</td>
+                    <td data-label="Status">
                       <StatusPill label={row.status} tone={row.tone} />
                     </td>
-                    <td className="registrations-table__amount">{row.amount}</td>
-                    <td>{row.refund}</td>
-                    <td className="actions-cell">
-                      <Link aria-label={`Open ${row.id}`} className="icon-action-button" to="/customers">
+                    <td className="registrations-table__amount" data-label="Amount">
+                      {row.amount}
+                    </td>
+                    <td data-label="Refund">{row.refund}</td>
+                    <td className="actions-cell" data-label="Actions">
+                      <Link aria-label={`Open ${row.id}`} className="icon-action-button" to="/merch/customers">
                         <EyeIcon className="button-icon button-icon--muted" />
                       </Link>
                       <a aria-label={`Email ${row.customer}`} className="icon-action-button" href={`mailto:${row.contactEmail}`}>
@@ -251,8 +257,8 @@ export function OrdersPage() {
         <article className="insight-card">
           <div className="insight-card__header">
             <div>
-              <p className="insight-card__eyebrow">Admin Tools</p>
-              <h2 className="section-title">What The Ops Desk Handles</h2>
+                <p className="insight-card__eyebrow">Fulfillment Tools</p>
+                <h2 className="section-title">What Your Team Can Do</h2>
             </div>
             <DocumentIcon className="insight-card__headline-icon" />
           </div>
@@ -263,6 +269,28 @@ export function OrdersPage() {
           </ul>
         </article>
       </section>
+
+      {isRefundQueueOpen ? (
+        <ActionSummaryModal
+          description="Review open returns and refunds before they affect customer satisfaction or payout timing."
+          onClose={() => setIsRefundQueueOpen(false)}
+          onPrimaryAction={() => {
+            setIsRefundQueueOpen(false)
+            navigate('/merch/customers')
+          }}
+          primaryActionLabel="Open Customers"
+          sections={[
+            { title: 'Order Tools', items: adminTools },
+            {
+              title: 'Refund-Sensitive Orders',
+              items: orderRows
+                .filter((row) => row.refund === 'Yes' || row.status === 'Returned')
+                .map((row) => `${row.id}: ${row.customer} • ${row.status} • ${row.amount}`),
+            },
+          ]}
+          title="Returns & Refunds"
+        />
+      ) : null}
     </div>
   )
 }

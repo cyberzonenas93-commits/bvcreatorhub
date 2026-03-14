@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
+import { ActionSummaryModal } from '../components/dashboard/ActionSummaryModal'
 import { MerchPageHeader } from '../components/dashboard/MerchPageHeader'
 import { MetricsGrid, type DashboardMetric } from '../components/dashboard/MetricsGrid'
 import { StatusPill } from '../components/dashboard/StatusPill'
@@ -18,45 +20,44 @@ import {
 import { downloadCsv } from '../lib/download'
 
 type MerchantRow = {
-  brand: string
-  category: string
+  surface: string
+  purpose: string
   status: string
   tone: 'accent' | 'success' | 'warning' | 'info'
-  commission: string
-  payout: string
-  featured: string
+  nextStep: string
+  visibility: string
   contactEmail: string
 }
 
 const merchantStats: DashboardMetric[] = [
   {
-    label: 'Approved Merchants',
-    value: '44',
-    helper: 'Fashion houses, creators, and BlacVolta-owned storefronts',
-    delta: '+11%',
+    label: 'Profile Completion',
+    value: '92%',
+    helper: 'Your storefront profile, assets, and storytelling surfaces are almost fully configured.',
+    delta: '+8%',
     icon: <StoreIcon className="metric-card__glyph" />,
   },
   {
-    label: 'Featured Brands',
-    value: '8',
-    helper: 'Homepage and editorial curation placements',
-    delta: '+2',
+    label: 'Verification Status',
+    value: 'Approved',
+    helper: 'Your brand is cleared to sell and receive payouts through the marketplace.',
+    delta: 'Live',
     icon: <TrendIcon className="metric-card__glyph" />,
     tone: 'success',
   },
   {
-    label: 'KYB In Review',
-    value: '12',
-    helper: 'Documentation and verification in-flight',
-    delta: '+4',
+    label: 'Featured Surfaces',
+    value: '3',
+    helper: 'Current placements across editorial, collections, and content commerce surfaces.',
+    delta: '+1',
     icon: <ShieldCheckIcon className="metric-card__glyph" />,
     tone: 'warning',
   },
   {
-    label: 'Avg. Onboarding Time',
-    value: '4.2 days',
-    helper: 'From brand submission to payout-ready merchant',
-    delta: '-0.8d',
+    label: 'Payout Setup',
+    value: 'Ready',
+    helper: 'Your Paystack configuration and settlement destination are active.',
+    delta: 'Weekly',
     icon: <UserPlusIcon className="metric-card__glyph" />,
     tone: 'info',
   },
@@ -64,89 +65,85 @@ const merchantStats: DashboardMetric[] = [
 
 const merchantRows: MerchantRow[] = [
   {
-    brand: 'Christie Brown',
-    category: 'Luxury Womenswear',
-    status: 'Approved',
+    surface: 'Brand Story',
+    purpose: 'About page + designer narrative',
+    status: 'Live',
     tone: 'success',
-    commission: '12%',
-    payout: 'Ready',
-    featured: 'Editorial + Homepage',
-    contactEmail: 'team@christiebrown.test',
+    nextStep: 'Refresh seasonal copy',
+    visibility: 'Storefront + editorial',
+    contactEmail: 'support@bvcreatorhub.test',
   },
   {
-    brand: 'Free The Youth',
-    category: 'Streetwear',
-    status: 'Verification',
+    surface: 'Social Links',
+    purpose: 'Instagram, TikTok, and brand website',
+    status: 'Live',
     tone: 'warning',
-    commission: '10%',
-    payout: 'Awaiting tax form',
-    featured: 'Drop Candidate',
-    contactEmail: 'ops@freetheyouth.test',
+    nextStep: 'Add campaign landing link',
+    visibility: 'Storefront footer',
+    contactEmail: 'support@bvcreatorhub.test',
   },
   {
-    brand: 'Chocolate',
-    category: 'Premium Ready-to-Wear',
-    status: 'Payout Setup',
+    surface: 'Brand Assets',
+    purpose: 'Logo, campaign banner, and hero imagery',
+    status: 'Review',
     tone: 'accent',
-    commission: '11%',
-    payout: 'Paystack linking',
-    featured: 'Lookbook Collection',
-    contactEmail: 'partnerships@chocolate.test',
+    nextStep: 'Upload updated homepage banner',
+    visibility: 'Storefront + collections',
+    contactEmail: 'support@bvcreatorhub.test',
   },
   {
-    brand: 'Brill',
-    category: 'Contemporary Fashion',
-    status: 'Featured',
+    surface: 'Tax & Payout',
+    purpose: 'Settlement account and tax details',
+    status: 'Ready',
     tone: 'info',
-    commission: '12%',
-    payout: 'Ready',
-    featured: 'Editors Pick',
-    contactEmail: 'hello@brill.test',
+    nextStep: 'No action needed',
+    visibility: 'Payments',
+    contactEmail: 'support@bvcreatorhub.test',
   },
 ]
 
-const adminControls = [
-  'Approve or reject merchants with contextual review notes',
-  'Assign merchant categories for discovery and analytics segments',
-  'Set platform commission percentages by brand tier or campaign',
-  'Enable featured brand status for homepage and editorial placement',
+const brandChecklistItems = [
+  'Keep your story, socials, and brand assets updated across all storefront surfaces.',
+  'Review featured placement opportunities before new collections and drops go live.',
+  'Check payout readiness whenever tax details or settlement accounts change.',
+  'Use settings to manage your team roles, permissions, and support contacts.',
 ]
 
 const profileSurfaces = [
   'Storytelling-led brand profile',
-  'Logo and brand asset uploads',
-  'Social links and contact channels',
+  'Logo and campaign asset uploads',
+  'Social links and direct customer channels',
   'Tax and payout configuration powered by Paystack',
 ]
 
 const featuredBrands = [
   {
-    name: 'Christie Brown',
-    note: 'Story-first luxury storefront with runway editorial hooks and premium accessory cross-sell.',
+    name: 'Homepage Feature',
+    note: 'Your current editorial placement is driving premium traffic into your Resort Edit collection.',
   },
   {
-    name: 'Free The Youth',
-    note: 'Community-led streetwear catalog built for flash drops, artist tie-ins, and creator merch capsules.',
+    name: 'Creator Capsule',
+    note: 'Your creator-linked tote edit is ready for a timed drop once launch assets are approved.',
   },
   {
-    name: 'Brill',
-    note: 'Seasonal capsule collections with high-margin looks and homepage curation readiness.',
+    name: 'Event Merch Edit',
+    note: 'Bundle event-linked products with content commerce placements to expand visibility beyond your storefront.',
   },
 ]
 
 export function MerchantsPage() {
   const navigate = useNavigate()
+  const [isApprovalQueueOpen, setIsApprovalQueueOpen] = useState(false)
 
   function exportMerchants() {
-    downloadCsv('blacvolta-merchants.csv', [
-      ['Brand', 'Category', 'Status', 'Commission', 'Payout', 'Featured'],
+    downloadCsv('storefront-profile.csv', [
+      ['Surface', 'Purpose', 'Status', 'Next Step', 'Visibility'],
       ...merchantRows.map((row) => [
-        row.brand,
-        row.category,
+        row.surface,
+        row.purpose,
         row.status,
-        row.commission,
-        row.payout,
-        row.featured,
+        row.nextStep,
+        row.visibility,
       ]),
     ])
   }
@@ -156,8 +153,9 @@ export function MerchantsPage() {
       <MerchPageHeader
         actions={[
           {
-            label: 'Approval Queue',
+            label: 'Brand Checklist',
             icon: <ShieldCheckIcon className="merch-action-button__glyph" />,
+            onClick: () => setIsApprovalQueueOpen(true),
           },
           {
             label: 'Export',
@@ -165,14 +163,14 @@ export function MerchantsPage() {
             onClick: exportMerchants,
           },
           {
-            label: 'Configure Roles',
+            label: 'Open Settings',
             icon: <SettingsIcon className="merch-action-button__glyph" />,
-            onClick: () => navigate('/settings'),
+            onClick: () => navigate('/merch/settings'),
             variant: 'primary',
           },
         ]}
-        subtitle="Review premium brands, verify documentation, configure payout readiness, and assign featured marketplace status."
-        title="Brand & Merchant Onboarding"
+        subtitle="Manage how your brand appears inside BV Creator Hub, from story and social links to payout readiness and featured placements."
+        title="Storefront Profile & Brand Setup"
       />
 
       <MetricsGrid metrics={merchantStats} />
@@ -181,13 +179,13 @@ export function MerchantsPage() {
         <section className="table-card">
           <div className="table-card__header">
             <div>
-              <h2 className="section-title">Merchant Approval Pipeline</h2>
+              <h2 className="section-title">Storefront Readiness</h2>
               <p className="section-subtitle">
-                Workflow aligned to onboarding, verification, commission setup, and launch readiness.
+                The key brand surfaces shoppers see before they buy from your storefront.
               </p>
             </div>
-            <Link className="table-card__link" to="/settings">
-              <span>Role settings</span>
+            <Link className="table-card__link" to="/merch/settings">
+              <span>Store settings</span>
               <ArrowRightIcon className="merch-inline-icon" />
             </Link>
           </div>
@@ -195,31 +193,29 @@ export function MerchantsPage() {
             <table className="registrations-table">
               <thead>
                 <tr>
-                  <th>Brand</th>
-                  <th>Category</th>
+                  <th>Surface</th>
+                  <th>Purpose</th>
                   <th>Status</th>
-                  <th>Commission</th>
-                  <th>Payout</th>
-                  <th>Featured</th>
+                  <th>Next Step</th>
+                  <th>Visibility</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {merchantRows.map((row) => (
-                  <tr key={row.brand}>
-                    <td>{row.brand}</td>
-                    <td>{row.category}</td>
-                    <td>
+                  <tr key={row.surface}>
+                    <td data-label="Surface">{row.surface}</td>
+                    <td data-label="Purpose">{row.purpose}</td>
+                    <td data-label="Status">
                       <StatusPill label={row.status} tone={row.tone} />
                     </td>
-                    <td>{row.commission}</td>
-                    <td>{row.payout}</td>
-                    <td>{row.featured}</td>
-                    <td className="actions-cell">
-                      <Link aria-label={`Open ${row.brand}`} className="icon-action-button" to="/settings">
+                    <td data-label="Next Step">{row.nextStep}</td>
+                    <td data-label="Visibility">{row.visibility}</td>
+                    <td className="actions-cell" data-label="Actions">
+                      <Link aria-label={`Open ${row.surface}`} className="icon-action-button" to="/merch/settings">
                         <EyeIcon className="button-icon button-icon--muted" />
                       </Link>
-                      <a aria-label={`Email ${row.brand}`} className="icon-action-button" href={`mailto:${row.contactEmail}`}>
+                      <a aria-label={`Email support about ${row.surface}`} className="icon-action-button" href={`mailto:${row.contactEmail}`}>
                         <MailIcon className="button-icon button-icon--accent" />
                       </a>
                     </td>
@@ -234,13 +230,13 @@ export function MerchantsPage() {
           <article className="insight-card">
             <div className="insight-card__header">
               <div>
-                <p className="insight-card__eyebrow">Admin Controls</p>
-                <h2 className="section-title">Decision Surface</h2>
+                <p className="insight-card__eyebrow">Brand Checklist</p>
+                <h2 className="section-title">What To Keep Updated</h2>
               </div>
               <SettingsIcon className="insight-card__headline-icon" />
             </div>
             <ul className="feature-list">
-              {adminControls.map((control) => (
+              {brandChecklistItems.map((control) => (
                 <li key={control}>{control}</li>
               ))}
             </ul>
@@ -249,8 +245,8 @@ export function MerchantsPage() {
           <article className="insight-card">
             <div className="insight-card__header">
               <div>
-                <p className="insight-card__eyebrow">Merchant Profile</p>
-                <h2 className="section-title">Required Brand Surfaces</h2>
+                <p className="insight-card__eyebrow">Storefront Surfaces</p>
+                <h2 className="section-title">What Buyers See</h2>
               </div>
               <LinkIcon className="insight-card__headline-icon" />
             </div>
@@ -266,12 +262,32 @@ export function MerchantsPage() {
       <section className="catalog-grid">
         {featuredBrands.map((brand) => (
           <article key={brand.name} className="catalog-card">
-            <p className="catalog-card__eyebrow">Featured Brand</p>
+            <p className="catalog-card__eyebrow">Featured Placement</p>
             <h2 className="section-title">{brand.name}</h2>
             <p className="catalog-card__copy">{brand.note}</p>
           </article>
         ))}
       </section>
+
+      {isApprovalQueueOpen ? (
+        <ActionSummaryModal
+          description="Use this checklist to keep your storefront polished, payout-ready, and visible across key marketplace surfaces."
+          onClose={() => setIsApprovalQueueOpen(false)}
+          onPrimaryAction={() => {
+            setIsApprovalQueueOpen(false)
+            navigate('/merch/settings')
+          }}
+          primaryActionLabel="Open Settings"
+          sections={[
+            { title: 'Brand Checklist', items: brandChecklistItems },
+            {
+              title: 'Current Brand Surfaces',
+              items: merchantRows.map((row) => `${row.surface}: ${row.status} • ${row.nextStep}`),
+            },
+          ]}
+          title="Brand Checklist"
+        />
+      ) : null}
     </div>
   )
 }

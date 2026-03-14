@@ -28,8 +28,8 @@ type MerchChartCardProps = {
 const chartFrame = {
   width: 1065,
   height: 350,
-  left: 65,
-  right: 65,
+  left: 92,
+  right: 72,
   top: 5,
   bottom: 35,
 }

@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { ActionSummaryModal } from '../components/dashboard/ActionSummaryModal'
 import { MerchChartCard } from '../components/dashboard/MerchChartCard'
 import { MerchPageHeader } from '../components/dashboard/MerchPageHeader'
 import { MetricsGrid, type DashboardMetric } from '../components/dashboard/MetricsGrid'
@@ -16,32 +18,32 @@ import { downloadCsv } from '../lib/download'
 const paymentsStats: DashboardMetric[] = [
   {
     label: 'Gross Sales',
-    value: 'GH₵5.92M',
-    helper: 'Marketplace revenue processed through Paystack year to date',
-    delta: '+24.1%',
+    value: 'GH₵684k',
+    helper: 'Total customer payments processed through your storefront and collection launches.',
+    delta: '+18.4%',
     icon: <WalletIcon className="metric-card__glyph" />,
   },
   {
-    label: 'Commission Earned',
-    value: 'GH₵698k',
-    helper: 'Platform share after automated merchant revenue split',
-    delta: '+18.6%',
+    label: 'Net Payouts',
+    value: 'GH₵512k',
+    helper: 'Settlements released to your payout account after payment confirmation and scheduled deductions.',
+    delta: '+16.2%',
     icon: <CardIcon className="metric-card__glyph" />,
     tone: 'success',
   },
   {
-    label: 'Merchant Payouts Due',
-    value: 'GH₵412k',
-    helper: 'Scheduled settlement batches awaiting the next payout run',
-    delta: '+7.8%',
+    label: 'Fees Deducted',
+    value: 'GH₵48k',
+    helper: 'Platform fees and payment charges applied before your net payout is released.',
+    delta: '+3.1%',
     icon: <RefreshIcon className="metric-card__glyph" />,
     tone: 'warning',
   },
   {
-    label: 'Webhook Health',
-    value: '99.98%',
-    helper: 'Transaction confirmations and payment verification success rate',
-    delta: '+0.04%',
+    label: 'Pending Settlement',
+    value: 'GH₵124k',
+    helper: 'Recent order revenue currently scheduled for your next payout cycle.',
+    delta: '+9.4%',
     icon: <TrendIcon className="metric-card__glyph" />,
     tone: 'info',
   },
@@ -59,28 +61,28 @@ const payoutSeries = [
 const payoutRows = [
   {
     batch: 'Batch 34',
-    merchant: 'Christie Brown',
+    merchant: 'Mar 1 - Mar 7',
     amount: 'GH₵68,200',
     status: 'Ready',
     tone: 'success' as const,
   },
   {
     batch: 'Batch 34',
-    merchant: 'Free The Youth',
+    merchant: 'Mar 8 - Mar 14',
     amount: 'GH₵44,800',
-    status: 'KYC Hold',
+    status: 'Processing',
     tone: 'warning' as const,
   },
   {
     batch: 'Batch 34',
-    merchant: 'Brill',
+    merchant: 'Mar 15 - Mar 21',
     amount: 'GH₵39,600',
     status: 'Queued',
     tone: 'accent' as const,
   },
   {
     batch: 'Batch 33',
-    merchant: 'Chocolate',
+    merchant: 'Feb 22 - Feb 28',
     amount: 'GH₵54,300',
     status: 'Paid',
     tone: 'info' as const,
@@ -88,18 +90,19 @@ const payoutRows = [
 ]
 
 const paymentFlow = [
-  'Paystack transaction processing with real-time payment verification',
-  'Webhook confirmation for successful payment events and reconciliations',
-  'Revenue split between merchant payout and BlacVolta commission',
-  'Dashboard reporting for total sales, merchant revenue, and transaction history',
+  'Track gross sales and recent fees before the next settlement cycle closes.',
+  'Review payout windows so launches and campaign pushes align with cash flow.',
+  'Use transaction history to reconcile orders, refunds, and payout timing.',
+  'Check account health if any settlement is delayed or placed on hold.',
 ]
 
 export function PaymentsPage() {
   const navigate = useNavigate()
+  const [isFeeControlsOpen, setIsFeeControlsOpen] = useState(false)
 
   function exportPayments() {
-    downloadCsv('blacvolta-payments.csv', [
-      ['Batch', 'Merchant', 'Amount', 'Status'],
+    downloadCsv('payments-and-payouts.csv', [
+      ['Batch', 'Settlement Window', 'Amount', 'Status'],
       ...payoutRows.map((row) => [row.batch, row.merchant, row.amount, row.status]),
     ])
   }
@@ -109,8 +112,9 @@ export function PaymentsPage() {
       <MerchPageHeader
         actions={[
           {
-            label: 'Settlement Rules',
+            label: 'Payout Schedule',
             icon: <RefreshIcon className="merch-action-button__glyph" />,
+            onClick: () => setIsFeeControlsOpen(true),
           },
           {
             label: 'Export',
@@ -118,14 +122,14 @@ export function PaymentsPage() {
             onClick: exportPayments,
           },
           {
-            label: 'Open Analytics',
+            label: 'Account Health',
             icon: <TrendIcon className="merch-action-button__glyph" />,
-            onClick: () => navigate('/analytics'),
+            onClick: () => navigate('/merch/risk'),
             variant: 'primary',
           },
         ]}
-        subtitle="Payments, commission splits, webhook health, and payout execution for every merchant account."
-        title="Payment & Payout Management"
+        subtitle="Track gross sales, upcoming settlements, fees, and payout history from one payout view."
+        title="Payments & Payouts"
       />
 
       <MetricsGrid metrics={paymentsStats} />
@@ -138,19 +142,19 @@ export function PaymentsPage() {
         points={payoutSeries}
         primaryLabel="Gross Sales"
         primaryStep={200000}
-        secondaryLabel="Merchant Payouts"
+        secondaryLabel="Payouts"
         secondaryStep={200000}
-        subtitle="Monthly payment volume compared with the merchant share of the revenue split."
-        title="Revenue Split Trend"
+        subtitle="Monthly sales compared with settlement volume released to your payout account."
+        title="Sales & Payout Trend"
       />
 
       <section className="split-grid">
         <section className="table-card">
           <div className="table-card__header">
             <div>
-              <h2 className="section-title">Payout Batches</h2>
+              <h2 className="section-title">Settlement Batches</h2>
               <p className="section-subtitle">
-                Merchant settlements scheduled directly from the merch admin dashboard.
+                Your recent settlement windows and payout batches.
               </p>
             </div>
           </div>
@@ -159,7 +163,7 @@ export function PaymentsPage() {
               <thead>
                 <tr>
                   <th>Batch</th>
-                  <th>Merchant</th>
+                  <th>Settlement Window</th>
                   <th>Amount</th>
                   <th>Status</th>
                 </tr>
@@ -167,10 +171,12 @@ export function PaymentsPage() {
               <tbody>
                 {payoutRows.map((row) => (
                   <tr key={`${row.batch}-${row.merchant}`}>
-                    <td>{row.batch}</td>
-                    <td>{row.merchant}</td>
-                    <td className="registrations-table__amount">{row.amount}</td>
-                    <td>
+                    <td data-label="Batch">{row.batch}</td>
+                    <td data-label="Settlement Window">{row.merchant}</td>
+                    <td className="registrations-table__amount" data-label="Amount">
+                      {row.amount}
+                    </td>
+                    <td data-label="Status">
                       <StatusPill label={row.status} tone={row.tone} />
                     </td>
                   </tr>
@@ -183,8 +189,8 @@ export function PaymentsPage() {
         <article className="insight-card">
           <div className="insight-card__header">
             <div>
-              <p className="insight-card__eyebrow">Paystack Workflow</p>
-              <h2 className="section-title">Processing Blueprint</h2>
+              <p className="insight-card__eyebrow">Payout Guide</p>
+              <h2 className="section-title">How Your Revenue Flows</h2>
             </div>
             <WalletIcon className="insight-card__headline-icon" />
           </div>
@@ -195,6 +201,26 @@ export function PaymentsPage() {
           </ul>
         </article>
       </section>
+
+      {isFeeControlsOpen ? (
+        <ActionSummaryModal
+          description="Use your payout schedule to understand when recent orders settle, what fees were applied, and when money lands in your account."
+          onClose={() => setIsFeeControlsOpen(false)}
+          onPrimaryAction={() => {
+            setIsFeeControlsOpen(false)
+            navigate('/merch/risk')
+          }}
+          primaryActionLabel="Account Health"
+          sections={[
+            { title: 'Processing Blueprint', items: paymentFlow },
+            {
+              title: 'Current Settlement Batch',
+              items: payoutRows.map((row) => `${row.merchant}: ${row.status} • ${row.amount}`),
+            },
+          ]}
+          title="Payout Schedule"
+        />
+      ) : null}
     </div>
   )
 }

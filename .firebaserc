@@ -1,0 +1,13 @@
+{
+  "projects": {},
+  "targets": {
+    "blacvolta-2762a": {
+      "hosting": {
+        "merchants": [
+          "bvcreatorhub"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
