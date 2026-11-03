@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BV Creator Hub Backend Integration Brief</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 18mm 16mm;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+    color: #1a1a1a;
+    background: #f3f4f6;
+    line-height: 1.5;
+  }
+  .page {
+    max-width: 920px;
+    margin: 0 auto;
+    background: white;
+    padding: 48px 56px 64px;
+  }
+  .cover {
+    border-bottom: 2px solid #111827;
+    padding-bottom: 24px;
+    margin-bottom: 28px;
+  }
+  .eyebrow {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+  }
+  .cover h1 {
+    margin: 0;
+    font-size: 32px;
+    line-height: 1.15;
+    color: #111827;
+  }
+  .cover p {
+    margin: 14px 0 0;
+    font-size: 15px;
+    color: #4b5563;
+    max-width: 760px;
+  }
+  .meta {
+    margin-top: 18px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: #374151;
+  }
+  .toc {
+    margin: 0 0 36px;
+    padding: 20px 22px;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+    border-radius: 12px;
+  }
+  .toc h2 {
+    margin: 0 0 12px;
+    font-size: 18px;
+    color: #111827;
+  }
+  .toc ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+  .toc__item {
+    margin: 4px 0;
+  }
+  .toc__item--sub {
+    margin-left: 12px;
+  }
+  .toc a {
+    color: #1f2937;
+    text-decoration: none;
+  }
+  h1 {
+    margin: 40px 0 14px;
+    font-size: 28px;
+    line-height: 1.2;
+    color: #111827;
+    page-break-after: avoid;
+  }
+  h2 {
+    margin: 34px 0 12px;
+    font-size: 22px;
+    line-height: 1.25;
+    color: #111827;
+    page-break-after: avoid;
+  }
+  h3 {
+    margin: 24px 0 10px;
+    font-size: 17px;
+    line-height: 1.3;
+    color: #111827;
+    page-break-after: avoid;
+  }
+  p {
+    margin: 0 0 12px;
+    font-size: 14px;
+    color: #1f2937;
+  }
+  ul {
+    margin: 0 0 14px 0;
+    padding-left: 22px;
+  }
+  li {
+    margin: 0 0 7px;
+    font-size: 14px;
+    color: #1f2937;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.92em;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    padding: 1px 5px;
+    border-radius: 5px;
+  }
+  @media print {
+    body { background: white; }
+    .page { max-width: none; margin: 0; padding: 0; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+    <section class="cover">
+      <p class="eyebrow">Engineering Handoff</p>
+      <h1>BV Creator Hub Backend, Data, and Integration Brief</h1>
+      <p>This brief defines what the developers need to build to turn the current vendor-facing BV Creator Hub prototype into a production commerce platform backed by real authentication, persistent data, payment and shipping integrations, analytics, and internal operational controls.</p>
+      <div class="meta">
+        <span><strong>Product:</strong> BV Creator Hub</span>
+        <span><strong>Deployment:</strong> bvcreatorhub.web.app</span>
+        <span><strong>Date:</strong> March 14, 2026</span>
+      </div>
+    </section>
+
+    <nav class="toc">
+      <h2>Contents</h2>
+      <ul><li class="toc__item"><a href="#1-purpose">1. Purpose</a></li><li class="toc__item"><a href="#2-product-definition">2. Product Definition</a></li><li class="toc__item"><a href="#3-implementation-guardrails">3. Implementation Guardrails</a></li><li class="toc__item toc__item--sub"><a href="#3-1-what-the-vendor-should-see">3.1 What the vendor should see</a></li><li class="toc__item toc__item--sub"><a href="#3-2-what-the-vendor-should-not-see">3.2 What the vendor should not see</a></li><li class="toc__item toc__item--sub"><a href="#3-3-what-still-has-to-exist-behind-the-scenes">3.3 What still has to exist behind the scenes</a></li><li class="toc__item"><a href="#4-current-frontend-state">4. Current Frontend State</a></li><li class="toc__item toc__item--sub"><a href="#4-1-stack-and-app-behavior">4.1 Stack and app behavior</a></li><li class="toc__item toc__item--sub"><a href="#4-2-current-mock-behavior">4.2 Current mock behavior</a></li><li class="toc__item toc__item--sub"><a href="#4-3-live-vendor-routes">4.3 Live vendor routes</a></li><li class="toc__item"><a href="#5-what-the-backend-must-deliver">5. What the Backend Must Deliver</a></li><li class="toc__item"><a href="#6-recommended-technical-shape">6. Recommended Technical Shape</a></li><li class="toc__item toc__item--sub"><a href="#6-1-core-runtime-components">6.1 Core runtime components</a></li><li class="toc__item toc__item--sub"><a href="#6-2-tenancy-model">6.2 Tenancy model</a></li><li class="toc__item toc__item--sub"><a href="#6-3-internal-operations-surface">6.3 Internal operations surface</a></li><li class="toc__item"><a href="#7-recommended-domain-model">7. Recommended Domain Model</a></li><li class="toc__item toc__item--sub"><a href="#7-1-identity-and-access">7.1 Identity and access</a></li><li class="toc__item toc__item--sub"><a href="#7-2-onboarding-verification-and-compliance">7.2 Onboarding, verification, and compliance</a></li><li class="toc__item toc__item--sub"><a href="#7-3-storefront-and-brand-profile">7.3 Storefront and brand profile</a></li><li class="toc__item toc__item--sub"><a href="#7-4-catalog-pricing-and-inventory">7.4 Catalog, pricing, and inventory</a></li><li class="toc__item toc__item--sub"><a href="#7-5-orders-fulfillment-and-returns">7.5 Orders, fulfillment, and returns</a></li><li class="toc__item toc__item--sub"><a href="#7-6-payments-fees-ledger-and-payouts">7.6 Payments, fees, ledger, and payouts</a></li><li class="toc__item toc__item--sub"><a href="#7-7-shipping-and-carrier-configuration">7.7 Shipping and carrier configuration</a></li><li class="toc__item toc__item--sub"><a href="#7-8-customers-and-crm">7.8 Customers and CRM</a></li><li class="toc__item toc__item--sub"><a href="#7-9-promotions-collections-and-content-commerce">7.9 Promotions, collections, and content commerce</a></li><li class="toc__item toc__item--sub"><a href="#7-10-notifications-exports-and-analytics">7.10 Notifications, exports, and analytics</a></li><li class="toc__item"><a href="#8-current-route-by-route-backend-requirements">8. Current Route-by-Route Backend Requirements</a></li><li class="toc__item toc__item--sub"><a href="#8-1-merch-get-started">8.1 `/merch/get-started`</a></li><li class="toc__item toc__item--sub"><a href="#8-2-merch-setup-account-verification-payout-review">8.2 `/merch/setup/account`, `/verification`, `/payout`, `/review`</a></li><li class="toc__item toc__item--sub"><a href="#8-3-merch-analytics">8.3 `/merch/analytics`</a></li><li class="toc__item toc__item--sub"><a href="#8-4-merch-merchants-as-storefront-profile">8.4 `/merch/merchants` as Storefront Profile</a></li><li class="toc__item toc__item--sub"><a href="#8-5-merch-products">8.5 `/merch/products`</a></li><li class="toc__item toc__item--sub"><a href="#8-6-merch-orders">8.6 `/merch/orders`</a></li><li class="toc__item toc__item--sub"><a href="#8-7-merch-inventory">8.7 `/merch/inventory`</a></li><li class="toc__item toc__item--sub"><a href="#8-8-merch-collections">8.8 `/merch/collections`</a></li><li class="toc__item toc__item--sub"><a href="#8-9-merch-promotions">8.9 `/merch/promotions`</a></li><li class="toc__item toc__item--sub"><a href="#8-10-merch-customers">8.10 `/merch/customers`</a></li><li class="toc__item toc__item--sub"><a href="#8-11-merch-payments">8.11 `/merch/payments`</a></li><li class="toc__item toc__item--sub"><a href="#8-12-merch-logistics">8.12 `/merch/logistics`</a></li><li class="toc__item toc__item--sub"><a href="#8-13-merch-risk-as-account-health">8.13 `/merch/risk` as Account Health</a></li><li class="toc__item toc__item--sub"><a href="#8-14-merch-content-commerce">8.14 `/merch/content-commerce`</a></li><li class="toc__item toc__item--sub"><a href="#8-15-merch-settings">8.15 `/merch/settings`</a></li><li class="toc__item"><a href="#9-recommended-api-conventions">9. Recommended API Conventions</a></li><li class="toc__item"><a href="#10-integration-requirements">10. Integration Requirements</a></li><li class="toc__item toc__item--sub"><a href="#10-1-authentication-and-account-security">10.1 Authentication and account security</a></li><li class="toc__item toc__item--sub"><a href="#10-2-payments">10.2 Payments</a></li><li class="toc__item toc__item--sub"><a href="#10-3-shipping">10.3 Shipping</a></li><li class="toc__item toc__item--sub"><a href="#10-4-storage-and-cdn">10.4 Storage and CDN</a></li><li class="toc__item toc__item--sub"><a href="#10-5-messaging">10.5 Messaging</a></li><li class="toc__item"><a href="#11-security-audit-and-compliance">11. Security, Audit, and Compliance</a></li><li class="toc__item"><a href="#12-frontend-integration-work-still-required">12. Frontend Integration Work Still Required</a></li><li class="toc__item"><a href="#13-delivery-plan">13. Delivery Plan</a></li><li class="toc__item toc__item--sub"><a href="#phase-1-foundation">Phase 1: foundation</a></li><li class="toc__item toc__item--sub"><a href="#phase-2-onboarding-and-store-profile">Phase 2: onboarding and store profile</a></li><li class="toc__item toc__item--sub"><a href="#phase-3-catalog-collections-and-inventory">Phase 3: catalog, collections, and inventory</a></li><li class="toc__item toc__item--sub"><a href="#phase-4-orders-payments-and-payouts">Phase 4: orders, payments, and payouts</a></li><li class="toc__item toc__item--sub"><a href="#phase-5-shipping-customers-campaigns-and-content-commerce">Phase 5: shipping, customers, campaigns, and content commerce</a></li><li class="toc__item toc__item--sub"><a href="#phase-6-analytics-and-account-health">Phase 6: analytics and account health</a></li><li class="toc__item"><a href="#14-open-product-decisions-the-team-should-resolve-early">14. Open Product Decisions the Team Should Resolve Early</a></li><li class="toc__item"><a href="#15-final-engineering-checklist">15. Final Engineering Checklist</a></li><li class="toc__item toc__item--sub"><a href="#platform-readiness">Platform readiness</a></li><li class="toc__item toc__item--sub"><a href="#vendor-workflow-readiness">Vendor workflow readiness</a></li><li class="toc__item toc__item--sub"><a href="#financial-and-operational-readiness">Financial and operational readiness</a></li><li class="toc__item toc__item--sub"><a href="#go-live-readiness">Go-live readiness</a></li><li class="toc__item"><a href="#16-closing-recommendation">16. Closing Recommendation</a></li></ul>
+    </nav>
+
+    <h1>BV Creator Hub Backend, Data, and Integration Brief</h1>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document is the technical handoff for the vendor-facing BV Creator Hub application currently deployed at <code>https://bvcreatorhub.web.app</code> and powered by the <code>/merch/*</code> routes in this repository.</p>
+<p>It is written for the developers who will turn the current frontend prototype into a production system backed by a real database, authentication layer, APIs, storage, payment integrations, shipping integrations, and reporting pipelines.</p>
+<p>This brief is intentionally vendor-facing in scope.</p>
+<ul><li>The app is a workspace for vendors to run their own store.</li><li>It is not an internal Blacvolta operations dashboard.</li><li>It should not expose other vendors&#x27; private data, platform-wide controls, or back-office review tools.</li><li>Any internal review, payout intervention, compliance approval, or merchandising control that Blacvolta staff need should live in a separate protected internal surface or behind internal-only endpoints.</li></ul>
+<p>The legacy ticketing product in this repo remains a separate surface and should not shape the first backend for BV Creator Hub.</p>
+<h2 id="2-product-definition">2. Product Definition</h2>
+<p>BV Creator Hub is the vendor console for brands, creators, and merchants selling through the Blacvolta app and web commerce channels.</p>
+<p>From the vendor&#x27;s point of view, the product needs to support five core jobs:</p>
+<ul><li>set up and verify a store</li><li>manage storefront profile, products, collections, and campaigns</li><li>process orders, shipping, returns, and customer support</li><li>receive payments and monitor payouts</li><li>understand performance through analytics, content commerce, and account health</li></ul>
+<p>The frontend already reflects that direction. The backend should follow the same model.</p>
+<p>Two route names in the current prototype need special handling:</p>
+<ul><li><code>/merch/merchants</code> is now the Storefront Profile and Brand Setup workspace, not a merchant list</li><li><code>/merch/risk</code> is now Account Health and Compliance, not an internal fraud or risk operations queue</li></ul>
+<p>The route names can stay as they are for frontend compatibility, but backend naming should reflect the actual product meaning.</p>
+<h2 id="3-implementation-guardrails">3. Implementation Guardrails</h2>
+<p>Before any schema or endpoint work starts, the team should align on the rules below.</p>
+<h3 id="3-1-what-the-vendor-should-see">3.1 What the vendor should see</h3>
+<ul><li>only their own store, catalog, orders, payouts, customers, and content placements</li><li>plain-language verification and compliance statuses</li><li>actionable alerts such as &quot;update payout account&quot; or &quot;upload a missing tax document&quot;</li><li>performance data derived from their own sales and traffic</li></ul>
+<h3 id="3-2-what-the-vendor-should-not-see">3.2 What the vendor should not see</h3>
+<ul><li>other vendors&#x27; metrics, payouts, approval states, or support issues</li><li>internal review notes written by Blacvolta staff</li><li>platform-wide fee configuration or settlement rules for other merchants</li><li>raw fraud scores, detection rules, or internal moderation logic</li><li>back-office actions that belong to internal staff only</li></ul>
+<h3 id="3-3-what-still-has-to-exist-behind-the-scenes">3.3 What still has to exist behind the scenes</h3>
+<p>Even though the app is vendor-facing, the platform still needs internal workflows for:</p>
+<ul><li>onboarding review and verification decisions</li><li>payout holds and release decisions</li><li>refund disputes and chargeback handling</li><li>merchandising and featured placement management</li><li>compliance interventions and account suspensions</li></ul>
+<p>Those are backend responsibilities and internal tooling responsibilities. They are not vendor UI responsibilities.</p>
+<h2 id="4-current-frontend-state">4. Current Frontend State</h2>
+<p>The current app is a React/Vite prototype with realistic navigation and workflows but no backend integration yet.</p>
+<h3 id="4-1-stack-and-app-behavior">4.1 Stack and app behavior</h3>
+<ul><li>React 19</li><li>TypeScript</li><li>Vite</li><li>React Router 7</li><li>local component state for most page data</li><li>no backend SDK in use</li><li>no data-fetching layer</li><li>no schema validation on API boundaries</li><li>no persistent auth/session layer</li><li>no route guards</li></ul>
+<h3 id="4-2-current-mock-behavior">4.2 Current mock behavior</h3>
+<ul><li><code>src/pages/MerchGetStartedPage.tsx</code></li><li>signup and login validate locally only</li><li>remember-me is local browser behavior only</li><li>terms, privacy, and password help are local modals only</li><li><code>src/pages/MerchOnboardingPage.tsx</code></li><li>onboarding data is stored in <code>sessionStorage</code> through <code>src/lib/merchSetup.ts</code></li><li>uploaded logo is stored as a local preview</li><li>ID and selfie uploads only retain filenames today</li><li>final submission changes only the local success state</li><li>merch dashboard pages</li><li>metrics, charts, statuses, queues, and CSV exports are hard-coded inside page files</li><li>topbar notifications and signed-in vendor identity</li><li>currently mocked in the frontend</li></ul>
+<h3 id="4-3-live-vendor-routes">4.3 Live vendor routes</h3>
+<ul><li><code>/merch/get-started</code></li><li><code>/merch/setup/account</code></li><li><code>/merch/setup/verification</code></li><li><code>/merch/setup/payout</code></li><li><code>/merch/setup/review</code></li><li><code>/merch/analytics</code></li><li><code>/merch/merchants</code></li><li><code>/merch/products</code></li><li><code>/merch/orders</code></li><li><code>/merch/inventory</code></li><li><code>/merch/collections</code></li><li><code>/merch/promotions</code></li><li><code>/merch/customers</code></li><li><code>/merch/payments</code></li><li><code>/merch/logistics</code></li><li><code>/merch/risk</code></li><li><code>/merch/content-commerce</code></li><li><code>/merch/settings</code></li></ul>
+<h2 id="5-what-the-backend-must-deliver">5. What the Backend Must Deliver</h2>
+<p>Connecting a database alone will not make this product functional. The system needs the full platform around the database.</p>
+<p>At minimum, the production implementation must deliver:</p>
+<ul><li>secure registration, login, sessions, password reset, and role-aware access</li><li>persistent onboarding drafts across devices and sessions</li><li>object storage for logos, banners, product media, documents, and campaign assets</li><li>vendor-scoped APIs for every dashboard route</li><li>payment capture, reconciliation, ledgering, and payouts</li><li>shipping rules, carrier integrations, tracking, and shipment updates</li><li>customer, order, return, and refund workflows</li><li>notifications and export jobs</li><li>analytics aggregation</li><li>audit logs and internal event history</li></ul>
+<h2 id="6-recommended-technical-shape">6. Recommended Technical Shape</h2>
+<p>The simplest safe implementation is a modular monolith with clear domain boundaries and a shared relational database. That gives the team enough structure to scale later without forcing premature microservices.</p>
+<h3 id="6-1-core-runtime-components">6.1 Core runtime components</h3>
+<ul><li>API application</li><li>REST is enough for the first version</li><li>PostgreSQL</li><li>primary transactional database</li><li>object storage</li><li>S3-compatible bucket, Firebase Storage, or equivalent</li><li>background job runner</li><li>notifications, exports, payout jobs, webhook retries, analytics snapshots</li><li>webhook receiver</li><li>payments and shipping provider callbacks</li><li>email and SMS delivery provider</li><li>monitoring, logging, and alerting</li></ul>
+<h3 id="6-2-tenancy-model">6.2 Tenancy model</h3>
+<p>The backend should be tenant-aware from day one.</p>
+<p>Recommended model:</p>
+<ul><li><code>organizations</code></li><li>legal or business tenant</li><li><code>stores</code></li><li>the storefront managed inside BV Creator Hub</li><li><code>users</code></li><li>human accounts</li><li><code>organization_members</code></li><li>membership and role assignment</li></ul>
+<p>This leaves room for one organization to run one or more stores later without rewriting the model.</p>
+<h3 id="6-3-internal-operations-surface">6.3 Internal operations surface</h3>
+<p>The backend must support internal staff actions, but those actions should not be designed as vendor-facing screens in this app.</p>
+<p>Recommended approach:</p>
+<ul><li>internal admin APIs protected by service roles and staff permissions</li><li>separate internal web surface, or</li><li>a future admin repo using the same backend</li></ul>
+<h2 id="7-recommended-domain-model">7. Recommended Domain Model</h2>
+<p>The table names below are suggestions, not hard requirements. The important part is the domain separation and the ownership boundaries.</p>
+<h3 id="7-1-identity-and-access">7.1 Identity and access</h3>
+<ul><li><code>users</code></li><li>account identity</li><li><code>sessions</code></li><li>browser or device sessions</li><li><code>password_reset_tokens</code></li><li>reset flow</li><li><code>organizations</code></li><li>legal tenant</li><li><code>stores</code></li><li>storefront record linked to organization</li><li><code>organization_members</code></li><li>user membership inside organization</li><li><code>roles</code></li><li>role definitions</li><li><code>permissions</code></li><li>atomic permission keys</li><li><code>role_permissions</code></li><li>role-to-permission mapping</li><li><code>member_invitations</code></li><li>team invitations</li><li><code>auth_audit_log</code></li><li>login, logout, lockout, invite acceptance, reset activity</li></ul>
+<h3 id="7-2-onboarding-verification-and-compliance">7.2 Onboarding, verification, and compliance</h3>
+<ul><li><code>store_onboarding_applications</code></li><li>current and historical onboarding submissions</li><li><code>verification_documents</code></li><li>uploaded ID, selfie, registration, tax, or supporting documents</li><li><code>verification_checks</code></li><li>automated and manual verification outcomes</li><li><code>store_status_history</code></li><li>draft, submitted, changes requested, verified, restricted, suspended</li><li><code>tax_profiles</code></li><li>TIN and related tax metadata</li><li><code>payout_accounts</code></li><li>bank or mobile money destinations</li><li><code>payout_preferences</code></li><li>settlement preference and payout timing</li><li><code>compliance_acceptances</code></li><li>agreement acceptance records</li><li><code>internal_review_actions</code></li><li>protected staff review history</li></ul>
+<h3 id="7-3-storefront-and-brand-profile">7.3 Storefront and brand profile</h3>
+<ul><li><code>store_profiles</code></li><li>public-facing store metadata</li><li><code>store_contacts</code></li><li>support email, phone, and contact points</li><li><code>store_social_links</code></li><li>Instagram, TikTok, website, and related links</li><li><code>store_assets</code></li><li>logo, banners, hero imagery, brand assets</li><li><code>store_readiness_checks</code></li><li>derived readiness states used by the dashboard</li><li><code>featured_surface_assignments</code></li><li>read-only to vendor unless there is an explicit acceptance flow</li></ul>
+<h3 id="7-4-catalog-pricing-and-inventory">7.4 Catalog, pricing, and inventory</h3>
+<ul><li><code>categories</code></li><li>product taxonomy</li><li><code>products</code></li><li>product metadata</li><li><code>product_variants</code></li><li>size, color, SKU, barcode, and variant dimensions</li><li><code>product_prices</code></li><li>price, currency, discount windows</li><li><code>product_media</code></li><li>images and video attachments</li><li><code>product_status_history</code></li><li>draft, live, archived, requires changes</li><li><code>collections</code></li><li>collection or drop container</li><li><code>collection_products</code></li><li>assignment of products to collections</li><li><code>inventory_levels</code></li><li>current sellable stock by SKU</li><li><code>inventory_adjustments</code></li><li>restocks, corrections, returns, shrinkage</li><li><code>inventory_reservations</code></li><li>temporary checkout holds before payment confirmation</li><li><code>stock_alert_rules</code></li><li>vendor thresholds and alert settings</li></ul>
+<h3 id="7-5-orders-fulfillment-and-returns">7.5 Orders, fulfillment, and returns</h3>
+<ul><li><code>customers</code></li><li>buyer identity</li><li><code>customer_addresses</code></li><li>shipping and billing addresses</li><li><code>orders</code></li><li>order header</li><li><code>order_items</code></li><li>purchased items</li><li><code>order_status_events</code></li><li>timeline of state changes</li><li><code>shipments</code></li><li>fulfillment records</li><li><code>shipment_items</code></li><li>item-to-shipment mapping</li><li><code>tracking_events</code></li><li>carrier timeline updates</li><li><code>returns</code></li><li>return or exchange requests</li><li><code>refunds</code></li><li>refund records</li><li><code>support_cases</code></li><li>customer or order support threads</li></ul>
+<h3 id="7-6-payments-fees-ledger-and-payouts">7.6 Payments, fees, ledger, and payouts</h3>
+<ul><li><code>payment_intents</code></li><li>payment attempt records</li><li><code>payment_transactions</code></li><li>authorizations, captures, failures, reversals</li><li><code>payment_provider_events</code></li><li>raw webhook events and processing status</li><li><code>fee_rules</code></li><li>platform and processing fee configuration</li><li><code>ledger_entries</code></li><li>double-entry or equivalent internal ledger movements</li><li><code>settlement_cycles</code></li><li>windows used to group cleared revenue</li><li><code>settlement_items</code></li><li>per-store amount calculations within a cycle</li><li><code>payouts</code></li><li>transfer attempts and outcomes</li><li><code>payout_failures</code></li><li>failed transfer diagnostics and retry handling</li><li><code>disputes</code></li><li>chargebacks and disputes</li></ul>
+<h3 id="7-7-shipping-and-carrier-configuration">7.7 Shipping and carrier configuration</h3>
+<ul><li><code>carriers</code></li><li>available shipping partners</li><li><code>carrier_accounts</code></li><li>linked credentials or references to secured secrets</li><li><code>shipping_zones</code></li><li>geography definitions</li><li><code>shipping_rules</code></li><li>fixed, tiered, or API-based shipping logic</li><li><code>shipping_quotes</code></li><li>quotes returned during checkout</li><li><code>delivery_promises</code></li><li>ETA rules shown to customers</li><li><code>shipment_exceptions</code></li><li>delays, failed deliveries, and investigations</li></ul>
+<h3 id="7-8-customers-and-crm">7.8 Customers and CRM</h3>
+<ul><li><code>customer_tags</code></li><li>VIP, repeat buyer, support-sensitive, manual watch flags</li><li><code>customer_notes</code></li><li>internal vendor notes</li><li><code>customer_segments</code></li><li>dynamic or static segments</li><li><code>customer_segment_memberships</code></li><li>customer-to-segment mapping</li><li><code>communication_preferences</code></li><li>consent and channel preferences</li><li><code>campaign_recipients</code></li><li>customers reached by specific campaigns</li></ul>
+<h3 id="7-9-promotions-collections-and-content-commerce">7.9 Promotions, collections, and content commerce</h3>
+<ul><li><code>campaigns</code></li><li>promotions and launch campaigns</li><li><code>campaign_rules</code></li><li>eligibility, threshold, and timing logic</li><li><code>promo_codes</code></li><li>redeemable codes</li><li><code>campaign_assets</code></li><li>banners and creative</li><li><code>content_surfaces</code></li><li>editorial, creator, event, landing page, podcast, story surfaces</li><li><code>content_placements</code></li><li>placement records</li><li><code>content_product_links</code></li><li>products linked into a content placement</li><li><code>creator_links</code></li><li>shareable links or creator-specific traffic destinations</li><li><code>attribution_events</code></li><li>traffic and conversion attribution</li></ul>
+<h3 id="7-10-notifications-exports-and-analytics">7.10 Notifications, exports, and analytics</h3>
+<ul><li><code>notifications</code></li><li>in-app activity feed</li><li><code>notification_deliveries</code></li><li>email, SMS, push delivery attempts</li><li><code>metric_snapshots</code></li><li>cached KPI time series</li><li><code>report_exports</code></li><li>server-side export jobs and generated files</li><li><code>audit_logs</code></li><li>immutable cross-domain history</li></ul>
+<h2 id="8-current-route-by-route-backend-requirements">8. Current Route-by-Route Backend Requirements</h2>
+<p>This section maps the live UI to backend behavior.</p>
+<h3 id="8-1-merch-get-started">8.1 <code>/merch/get-started</code></h3>
+<p>This route needs real authentication.</p>
+<p>Vendor-visible responsibilities:</p>
+<ul><li>sign up</li><li>log in</li><li>remember email on this device</li><li>open password recovery flow</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>POST /auth/register</code></li><li><code>POST /auth/login</code></li><li><code>POST /auth/logout</code></li><li><code>GET /auth/session</code></li><li><code>POST /auth/forgot-password</code></li><li><code>POST /auth/reset-password</code></li></ul>
+<p>Expected behavior:</p>
+<ul><li>create the first user for the organization</li><li>create the organization and draft store record</li><li>create or resume the onboarding application</li><li>prevent duplicate email registration</li><li>rate-limit repeated login attempts</li><li>audit login and reset activity</li></ul>
+<h3 id="8-2-merch-setup-account-verification-payout-review">8.2 <code>/merch/setup/account</code>, <code>/verification</code>, <code>/payout</code>, <code>/review</code></h3>
+<p>This flow should move from browser session state into persistent onboarding records.</p>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /onboarding/current</code></li><li><code>PATCH /onboarding/current</code></li><li><code>POST /onboarding/current/uploads</code></li><li><code>POST /onboarding/current/submit</code></li><li><code>GET /onboarding/current/status</code></li></ul>
+<p>What must be stored:</p>
+<ul><li>brand name</li><li>contact person</li><li>email</li><li>phone</li><li>business type</li><li>social links</li><li>logo and brand assets</li><li>business registration data</li><li>tax details</li><li>payout destination and settlement preference</li><li>seller agreement acceptance</li></ul>
+<p>Important implementation note:</p>
+<p>The vendor app should show clear statuses such as:</p>
+<ul><li>draft</li><li>submitted</li><li>more information required</li><li>verified</li></ul>
+<p>It should not display internal reviewer notes verbatim unless product explicitly decides to expose them.</p>
+<h3 id="8-3-merch-analytics">8.3 <code>/merch/analytics</code></h3>
+<p>This is the vendor&#x27;s own performance overview.</p>
+<p>It needs:</p>
+<ul><li>sales summary</li><li>units sold</li><li>conversion rate</li><li>returning customer rate</li><li>sales and order trend</li><li>traffic sources</li><li>top products</li><li>export support</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /dashboard/summary</code></li><li><code>GET /dashboard/sales-trend</code></li><li><code>GET /dashboard/traffic-sources</code></li><li><code>GET /dashboard/top-products</code></li><li><code>POST /exports/analytics</code></li></ul>
+<p>Source data:</p>
+<ul><li>orders</li><li>order items</li><li>cleared payment records</li><li>attribution events</li><li>customer repeat-purchase calculations</li></ul>
+<h3 id="8-4-merch-merchants-as-storefront-profile">8.4 <code>/merch/merchants</code> as Storefront Profile</h3>
+<p>Treat this route as the vendor&#x27;s storefront profile workspace.</p>
+<p>It needs:</p>
+<ul><li>brand story</li><li>social links</li><li>support contact details</li><li>logo and campaign asset management</li><li>payout readiness and profile completeness signals</li><li>read-only visibility into featured placements or storefront surfaces</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /storefront</code></li><li><code>PATCH /storefront</code></li><li><code>POST /storefront/assets</code></li><li><code>DELETE /storefront/assets/:assetId</code></li><li><code>PATCH /storefront/social-links</code></li><li><code>PATCH /storefront/contacts</code></li><li><code>GET /storefront/readiness</code></li><li><code>GET /storefront/placements</code></li></ul>
+<p>Do not build this as a cross-vendor merchant management endpoint for the vendor UI.</p>
+<h3 id="8-5-merch-products">8.5 <code>/merch/products</code></h3>
+<p>This route needs a full catalog management API.</p>
+<p>It needs:</p>
+<ul><li>product list</li><li>product detail</li><li>create, edit, archive, publish, and unpublish</li><li>price and sale windows</li><li>media uploads</li><li>collection assignment</li><li>variant and SKU management</li><li>stock visibility</li><li>bulk export</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /products</code></li><li><code>GET /products/:productId</code></li><li><code>POST /products</code></li><li><code>PATCH /products/:productId</code></li><li><code>DELETE /products/:productId</code></li><li><code>POST /products/:productId/media</code></li><li><code>POST /products/:productId/variants</code></li><li><code>PATCH /products/:productId/status</code></li><li><code>POST /exports/products</code></li></ul>
+<p>Important note:</p>
+<p>If internal review exists, the vendor-facing status should read like a publishing workflow, for example <code>requires changes</code>, not like an internal moderation queue.</p>
+<h3 id="8-6-merch-orders">8.6 <code>/merch/orders</code></h3>
+<p>This route needs real order operations.</p>
+<p>It needs:</p>
+<ul><li>search and filter by order, customer, status, date, fulfillment state</li><li>order detail view</li><li>packing and shipment state transitions</li><li>return and refund handling</li><li>links into customer support context</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /orders</code></li><li><code>GET /orders/:orderId</code></li><li><code>PATCH /orders/:orderId/status</code></li><li><code>POST /orders/:orderId/shipments</code></li><li><code>GET /orders/:orderId/shipments</code></li><li><code>POST /orders/:orderId/returns</code></li><li><code>POST /orders/:orderId/refunds</code></li><li><code>POST /exports/orders</code></li></ul>
+<p>This route should eventually move away from generic table actions and into proper order detail endpoints.</p>
+<h3 id="8-7-merch-inventory">8.7 <code>/merch/inventory</code></h3>
+<p>This route needs inventory integrity, not just a stock list.</p>
+<p>It needs:</p>
+<ul><li>current stock by SKU</li><li>low-stock and out-of-stock thresholds</li><li>adjustment history</li><li>reservation-aware availability</li><li>alerts tied to campaigns and launches</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /inventory</code></li><li><code>GET /inventory/:sku/history</code></li><li><code>POST /inventory/adjustments</code></li><li><code>PATCH /inventory/alerts</code></li><li><code>GET /inventory/alerts</code></li><li><code>POST /exports/inventory</code></li></ul>
+<p>The stock model must be consistent with checkout reservations and payment confirmation or the analytics and order surfaces will drift.</p>
+<h3 id="8-8-merch-collections">8.8 <code>/merch/collections</code></h3>
+<p>This route needs collection and launch management.</p>
+<p>It needs:</p>
+<ul><li>collection CRUD</li><li>product assignment</li><li>launch windows and countdowns</li><li>featured flags</li><li>export</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /collections</code></li><li><code>GET /collections/:collectionId</code></li><li><code>POST /collections</code></li><li><code>PATCH /collections/:collectionId</code></li><li><code>POST /collections/:collectionId/products</code></li><li><code>DELETE /collections/:collectionId/products/:productId</code></li><li><code>PATCH /collections/:collectionId/launch-window</code></li><li><code>POST /exports/collections</code></li></ul>
+<h3 id="8-9-merch-promotions">8.9 <code>/merch/promotions</code></h3>
+<p>This route needs real campaign and discount logic.</p>
+<p>It needs:</p>
+<ul><li>promotions list</li><li>campaign status</li><li>discount logic</li><li>promo code support</li><li>free shipping and timed sale rules</li><li>campaign exports</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /campaigns</code></li><li><code>GET /campaigns/:campaignId</code></li><li><code>POST /campaigns</code></li><li><code>PATCH /campaigns/:campaignId</code></li><li><code>POST /campaigns/:campaignId/rules</code></li><li><code>POST /campaigns/:campaignId/codes</code></li><li><code>PATCH /campaigns/:campaignId/status</code></li><li><code>POST /exports/campaigns</code></li></ul>
+<h3 id="8-10-merch-customers">8.10 <code>/merch/customers</code></h3>
+<p>This route needs vendor-safe CRM features.</p>
+<p>It needs:</p>
+<ul><li>customer list</li><li>lifetime value</li><li>repeat-purchase signals</li><li>support flags</li><li>notes</li><li>segments or tags</li><li>location insights</li><li>export</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /customers</code></li><li><code>GET /customers/:customerId</code></li><li><code>POST /customers/:customerId/notes</code></li><li><code>POST /customers/:customerId/tags</code></li><li><code>GET /customers/segments</code></li><li><code>POST /exports/customers</code></li></ul>
+<p>Any communication feature tied to this route should respect consent, suppression, and local compliance requirements.</p>
+<h3 id="8-11-merch-payments">8.11 <code>/merch/payments</code></h3>
+<p>This route needs a proper financial read model backed by a ledger.</p>
+<p>It needs:</p>
+<ul><li>gross sales</li><li>net payouts</li><li>fees deducted</li><li>pending settlement</li><li>settlement windows</li><li>payout history</li><li>transaction reconciliation</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /finance/summary</code></li><li><code>GET /finance/settlements</code></li><li><code>GET /finance/payouts</code></li><li><code>GET /finance/transactions</code></li><li><code>POST /exports/finance</code></li></ul>
+<p>Required backend behavior:</p>
+<ul><li>reconcile provider webhooks</li><li>compute net amounts after fees</li><li>group settled revenue into payout cycles</li><li>track payout success, failure, and retry states</li></ul>
+<h3 id="8-12-merch-logistics">8.12 <code>/merch/logistics</code></h3>
+<p>This route needs vendor-facing shipping configuration and shipment visibility.</p>
+<p>It needs:</p>
+<ul><li>connected carriers</li><li>shipping rules</li><li>zone logic</li><li>service levels</li><li>shipment health</li><li>tracking visibility</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /shipping/carriers</code></li><li><code>GET /shipping/rules</code></li><li><code>POST /shipping/rules</code></li><li><code>PATCH /shipping/rules/:ruleId</code></li><li><code>GET /shipping/shipments</code></li><li><code>GET /shipping/shipments/:shipmentId/tracking</code></li><li><code>POST /exports/shipping</code></li></ul>
+<p>Carrier credentials should never be exposed to the browser. Store only references to secured credentials or use a vault-backed connection model.</p>
+<h3 id="8-13-merch-risk-as-account-health">8.13 <code>/merch/risk</code> as Account Health</h3>
+<p>This route should be implemented as vendor-facing account health, not internal fraud operations.</p>
+<p>It needs:</p>
+<ul><li>verification tasks</li><li>payout readiness issues</li><li>catalog issues</li><li>shipping exceptions</li><li>policy alerts</li><li>clear next actions for the vendor</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /account-health/summary</code></li><li><code>GET /account-health/tasks</code></li><li><code>GET /account-health/issues</code></li><li><code>POST /account-health/issues/:issueId/acknowledge</code></li></ul>
+<p>Important rule:</p>
+<p>This surface should expose vendor-actionable states, not raw internal scoring or detection logic.</p>
+<p>Good vendor-facing examples:</p>
+<ul><li>missing tax information</li><li>payout account requires update</li><li>listing needs care instructions</li><li>recent return rate needs attention</li></ul>
+<p>Bad vendor-facing examples:</p>
+<ul><li>hidden fraud score</li><li>internal decision notes</li><li>rule engine outputs that have no vendor action attached</li></ul>
+<h3 id="8-14-merch-content-commerce">8.14 <code>/merch/content-commerce</code></h3>
+<p>This route needs content-linked commerce records.</p>
+<p>It needs:</p>
+<ul><li>placements list</li><li>linked products</li><li>surface type</li><li>placement status</li><li>attribution reporting</li><li>export support</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /content/placements</code></li><li><code>GET /content/placements/:placementId</code></li><li><code>POST /content/placements</code></li><li><code>PATCH /content/placements/:placementId</code></li><li><code>POST /content/placements/:placementId/products</code></li><li><code>GET /content/attribution</code></li><li><code>POST /exports/content-commerce</code></li></ul>
+<h3 id="8-15-merch-settings">8.15 <code>/merch/settings</code></h3>
+<p>This route needs real team, access, payout, and shipping configuration APIs.</p>
+<p>It needs:</p>
+<ul><li>team members</li><li>invitations</li><li>role assignments</li><li>payout connections</li><li>shipping connections</li><li>permission-aware actions</li></ul>
+<p>Backend responsibilities:</p>
+<ul><li><code>GET /settings/team</code></li><li><code>POST /settings/invitations</code></li><li><code>PATCH /settings/members/:memberId/role</code></li><li><code>DELETE /settings/members/:memberId</code></li><li><code>GET /settings/payout-accounts</code></li><li><code>POST /settings/payout-accounts</code></li><li><code>GET /settings/shipping-connections</code></li><li><code>POST /settings/shipping-connections</code></li></ul>
+<p>This route is also where RBAC becomes enforceable across the rest of the app.</p>
+<h2 id="9-recommended-api-conventions">9. Recommended API Conventions</h2>
+<p>The team should align on a few API rules early to avoid churn.</p>
+<ul><li>version APIs from the start</li><li>use stable IDs, not display names, as foreign keys</li><li>return organization and store context in session/bootstrap payloads</li><li>use cursor or page-based pagination consistently</li><li>support filtering and sorting in list endpoints</li><li>return structured validation errors for forms</li><li>use idempotency keys on payment and payout actions</li><li>verify webhook signatures</li><li>make exports asynchronous once datasets grow</li><li>include audit metadata on write actions</li></ul>
+<p>Recommended bootstrap call after login:</p>
+<ul><li><code>GET /app/bootstrap</code></li></ul>
+<p>That response can include:</p>
+<ul><li>authenticated user</li><li>organization</li><li>store</li><li>role and permissions</li><li>onboarding state</li><li>notification count</li><li>top-level account health summary</li></ul>
+<h2 id="10-integration-requirements">10. Integration Requirements</h2>
+<h3 id="10-1-authentication-and-account-security">10.1 Authentication and account security</h3>
+<ul><li>password hashing</li><li>secure sessions or signed tokens with refresh strategy</li><li>password reset email flow</li><li>login audit logging</li><li>optional MFA later</li><li>session revocation</li></ul>
+<h3 id="10-2-payments">10.2 Payments</h3>
+<p>Paystack is the obvious first payment integration based on the current product assumptions.</p>
+<p>The payment implementation needs:</p>
+<ul><li>payment initiation</li><li>webhook confirmation</li><li>reconciliation</li><li>refund support</li><li>dispute handling</li><li>payout initiation or payout export workflow depending on provider model</li></ul>
+<h3 id="10-3-shipping">10.3 Shipping</h3>
+<p>The shipping layer needs:</p>
+<ul><li>rate quote support</li><li>service-level and zone configuration</li><li>label or shipment creation if providers support it</li><li>tracking update ingestion</li><li>shipment exception handling</li></ul>
+<h3 id="10-4-storage-and-cdn">10.4 Storage and CDN</h3>
+<p>Store these outside the database:</p>
+<ul><li>logos</li><li>banners</li><li>product images</li><li>product videos</li><li>onboarding documents</li><li>campaign assets</li></ul>
+<p>Requirements:</p>
+<ul><li>signed upload flow</li><li>mime-type validation</li><li>file size limits</li><li>image optimization where needed</li><li>signed download URLs for protected files</li></ul>
+<h3 id="10-5-messaging">10.5 Messaging</h3>
+<p>The platform should support:</p>
+<ul><li>email notifications</li><li>optional SMS for order or payout alerts</li><li>queue-backed delivery and retry</li><li>per-channel audit trail</li></ul>
+<h2 id="11-security-audit-and-compliance">11. Security, Audit, and Compliance</h2>
+<p>The first production version should treat the areas below as non-negotiable.</p>
+<ul><li>RBAC on every write endpoint</li><li>strict tenant scoping on every read and write</li><li>server-side validation of ownership and store access</li><li>audit logs for onboarding submission, payout changes, refunds, role changes, and compliance actions</li><li>encryption for sensitive fields and secrets</li><li>signed webhook verification</li><li>rate limiting for auth and public-facing write endpoints</li><li>backups and restore procedures</li><li>operational logging and error tracking</li></ul>
+<h2 id="12-frontend-integration-work-still-required">12. Frontend Integration Work Still Required</h2>
+<p>Once the backend exists, the frontend still needs a structured integration pass.</p>
+<ul><li>replace static arrays with API data</li><li>replace <code>sessionStorage</code> onboarding persistence with backend draft persistence</li><li>add loading, empty, and error states to merch routes</li><li>add auth bootstrap and session expiry handling</li><li>add route protection for authenticated vendor areas</li><li>replace local CSV generation with server-backed exports where needed</li><li>replace placeholder modals with real workflows where applicable</li><li>add detail views for orders, customers, products, payouts, and placements</li></ul>
+<h2 id="13-delivery-plan">13. Delivery Plan</h2>
+<p>The safest build sequence is below.</p>
+<h3 id="phase-1-foundation">Phase 1: foundation</h3>
+<ul><li>PostgreSQL schema and migrations</li><li>auth and session model</li><li>organization and store tenancy</li><li>storage integration</li><li>background jobs</li><li>audit log base layer</li></ul>
+<h3 id="phase-2-onboarding-and-store-profile">Phase 2: onboarding and store profile</h3>
+<ul><li>registration and login</li><li>onboarding draft persistence</li><li>document uploads</li><li>verification state machine</li><li>payout account setup</li><li>storefront profile and brand assets</li></ul>
+<h3 id="phase-3-catalog-collections-and-inventory">Phase 3: catalog, collections, and inventory</h3>
+<ul><li>product CRUD</li><li>variant and media model</li><li>collection management</li><li>inventory levels, adjustments, and thresholds</li></ul>
+<h3 id="phase-4-orders-payments-and-payouts">Phase 4: orders, payments, and payouts</h3>
+<ul><li>order model</li><li>payment provider integration</li><li>ledger and settlement calculations</li><li>payouts and payout status tracking</li><li>refunds and returns</li></ul>
+<h3 id="phase-5-shipping-customers-campaigns-and-content-commerce">Phase 5: shipping, customers, campaigns, and content commerce</h3>
+<ul><li>carrier rules</li><li>shipment tracking</li><li>customer notes and segmentation</li><li>campaigns and promo codes</li><li>content placements and attribution</li></ul>
+<h3 id="phase-6-analytics-and-account-health">Phase 6: analytics and account health</h3>
+<ul><li>KPI aggregation</li><li>performance reporting</li><li>notification feed</li><li>vendor-facing account health tasks</li><li>internal tools for review and intervention</li></ul>
+<h2 id="14-open-product-decisions-the-team-should-resolve-early">14. Open Product Decisions the Team Should Resolve Early</h2>
+<p>These are not blockers for schema design, but the answers will change some endpoint behavior.</p>
+<ul><li>Can one organization operate multiple stores, or should the first release assume one store per organization?</li><li>Can vendors trigger refunds directly, or only request them?</li><li>Are shipping accounts vendor-specific, platform-managed, or a mix of both?</li><li>Should featured placements be vendor-readable only, or can vendors submit placement requests?</li><li>Will customer messaging happen inside BV Creator Hub, or through an external CRM provider?</li><li>Will content commerce placements be authored inside this dashboard, or linked from a separate CMS?</li></ul>
+<h2 id="15-final-engineering-checklist">15. Final Engineering Checklist</h2>
+<p>Before calling the product production-ready, the team should be able to answer yes to the following.</p>
+<h3 id="platform-readiness">Platform readiness</h3>
+<ul><li>authentication works end to end</li><li>every merch route is tenant-scoped</li><li>permissions are enforced on the server</li><li>audit logs exist for sensitive actions</li><li>secrets are stored outside source control</li></ul>
+<h3 id="vendor-workflow-readiness">Vendor workflow readiness</h3>
+<ul><li>a new vendor can sign up, complete onboarding, upload documents, and resume later</li><li>a verified vendor can edit store profile, add products, create collections, and manage stock</li><li>a vendor can view real orders, shipments, returns, customers, payouts, and alerts</li><li>analytics are generated from real data, not manual entries</li></ul>
+<h3 id="financial-and-operational-readiness">Financial and operational readiness</h3>
+<ul><li>payments reconcile correctly</li><li>payouts are ledger-backed</li><li>inventory stays in sync with checkout and refunds</li><li>shipping updates flow back into orders</li><li>exports work on real datasets</li></ul>
+<h3 id="go-live-readiness">Go-live readiness</h3>
+<ul><li>monitoring and alerting are active</li><li>backup policy is documented</li><li>webhook retry strategy is in place</li><li>support and internal review tools exist for verification, payout issues, and interventions</li></ul>
+<h2 id="16-closing-recommendation">16. Closing Recommendation</h2>
+<p>Build BV Creator Hub as a vendor-scoped commerce platform with a strong internal service layer behind it, not as a thin admin console tied directly to raw database tables.</p>
+<p>If the backend is designed around vendor ownership, ledger-backed finance, inventory integrity, and protected internal operations, the current frontend can be turned into a reliable production product without a second architecture reset.</p>
+  </main>
+</body>
+</html>
