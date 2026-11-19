@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "bvcreatorhub",
+    "site": "blacvolta-merchants",
     "public": "dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "headers": [

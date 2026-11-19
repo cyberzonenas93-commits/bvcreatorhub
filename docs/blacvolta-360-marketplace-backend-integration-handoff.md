@@ -1,48 +1,106 @@
-# Blacvolta 360 Marketplace Backend & Database Integration Handoff
+# BV Creator Hub Backend, Data, and Integration Brief
 
-## 1. Scope
+## 1. Purpose
 
-- This document covers the marketplace app currently served from `blacvolta-store.web.app`, which maps to the `/merch/*` routes in `src/router.tsx`.
-- The repo still contains the older ticketing dashboard and related local-storage modules, but that is a separate product surface and should not drive the first database design for the marketplace deployment.
-- This handoff is based on the current frontend implementation plus the marketplace epic. It is intended for the developers who will make the prototype production-ready.
-- Important: connecting a database alone will not make this app functional. The app also needs authentication, APIs, object storage, background jobs, provider integrations, audit logging, and a real permissions model.
+This document is the technical handoff for the vendor-facing BV Creator Hub application currently deployed at `https://bvcreatorhub.web.app` and powered by the `/merch/*` routes in this repository.
 
-## 2. Executive Summary
+It is written for the developers who will turn the current frontend prototype into a production system backed by a real database, authentication layer, APIs, storage, payment integrations, shipping integrations, and reporting pipelines.
 
-- The current marketplace app is a frontend prototype built with React, Vite, and React Router.
-- There is no backend client in the app today.
-- There is no server-side authentication or authorization.
-- There is no database schema or API contract implemented in the frontend.
-- There is no live payment, logistics, notification, moderation, CRM, or analytics pipeline.
-- Marketplace onboarding uses `sessionStorage` via `src/lib/merchSetup.ts`.
-- Dashboard pages use hard-coded arrays embedded in the page files themselves.
-- Exports use browser-generated CSVs from `src/lib/download.ts`.
-- Notifications, profile identity, metrics, queues, rankings, statuses, and charts are static UI data right now.
+This brief is intentionally vendor-facing in scope.
 
-To make the app fully functional, the team needs:
+- The app is a workspace for vendors to run their own store.
+- It is not an internal Blacvolta operations dashboard.
+- It should not expose other vendors' private data, platform-wide controls, or back-office review tools.
+- Any internal review, payout intervention, compliance approval, or merchandising control that Blacvolta staff need should live in a separate protected internal surface or behind internal-only endpoints.
 
-- A tenant-aware backend with organization-level scoping.
-- A relational database, ideally PostgreSQL.
-- Object storage for logos, merchant documents, product media, and campaign assets.
-- Authentication, sessions, password reset, and role-based access control.
-- APIs for every marketplace route.
-- Webhook ingestion for payments and logistics updates.
-- Background jobs for settlements, notifications, analytics aggregation, and monitoring.
-- Audit logging for all governance, financial, and risk actions.
+The legacy ticketing product in this repo remains a separate surface and should not shape the first backend for BV Creator Hub.
 
-## 3. Current Frontend Audit
+## 2. Product Definition
 
-### 3.1 Framework and app shell
+BV Creator Hub is the vendor console for brands, creators, and merchants selling through the Blacvolta app and web commerce channels.
 
-- Frontend stack: React 19, React Router 7, Vite, TypeScript.
-- No data-fetching library is installed.
-- No backend SDK is installed.
-- No schema-validation library is installed.
-- No global auth/session store exists.
-- No route guards exist.
-- No loading, retry, empty, unauthorized, or API error states exist for the merch routes.
+From the vendor's point of view, the product needs to support five core jobs:
 
-### 3.2 Live marketplace routes
+- set up and verify a store
+- manage storefront profile, products, collections, and campaigns
+- process orders, shipping, returns, and customer support
+- receive payments and monitor payouts
+- understand performance through analytics, content commerce, and account health
+
+The frontend already reflects that direction. The backend should follow the same model.
+
+Two route names in the current prototype need special handling:
+
+- `/merch/merchants` is now the Storefront Profile and Brand Setup workspace, not a merchant list
+- `/merch/risk` is now Account Health and Compliance, not an internal fraud or risk operations queue
+
+The route names can stay as they are for frontend compatibility, but backend naming should reflect the actual product meaning.
+
+## 3. Implementation Guardrails
+
+Before any schema or endpoint work starts, the team should align on the rules below.
+
+### 3.1 What the vendor should see
+
+- only their own store, catalog, orders, payouts, customers, and content placements
+- plain-language verification and compliance statuses
+- actionable alerts such as "update payout account" or "upload a missing tax document"
+- performance data derived from their own sales and traffic
+
+### 3.2 What the vendor should not see
+
+- other vendors' metrics, payouts, approval states, or support issues
+- internal review notes written by Blacvolta staff
+- platform-wide fee configuration or settlement rules for other merchants
+- raw fraud scores, detection rules, or internal moderation logic
+- back-office actions that belong to internal staff only
+
+### 3.3 What still has to exist behind the scenes
+
+Even though the app is vendor-facing, the platform still needs internal workflows for:
+
+- onboarding review and verification decisions
+- payout holds and release decisions
+- refund disputes and chargeback handling
+- merchandising and featured placement management
+- compliance interventions and account suspensions
+
+Those are backend responsibilities and internal tooling responsibilities. They are not vendor UI responsibilities.
+
+## 4. Current Frontend State
+
+The current app is a React/Vite prototype with realistic navigation and workflows but no backend integration yet.
+
+### 4.1 Stack and app behavior
+
+- React 19
+- TypeScript
+- Vite
+- React Router 7
+- local component state for most page data
+- no backend SDK in use
+- no data-fetching layer
+- no schema validation on API boundaries
+- no persistent auth/session layer
+- no route guards
+
+### 4.2 Current mock behavior
+
+- `src/pages/MerchGetStartedPage.tsx`
+  - signup and login validate locally only
+  - remember-me is local browser behavior only
+  - terms, privacy, and password help are local modals only
+- `src/pages/MerchOnboardingPage.tsx`
+  - onboarding data is stored in `sessionStorage` through `src/lib/merchSetup.ts`
+  - uploaded logo is stored as a local preview
+  - ID and selfie uploads only retain filenames today
+  - final submission changes only the local success state
+- merch dashboard pages
+  - metrics, charts, statuses, queues, and CSV exports are hard-coded inside page files
+- topbar notifications and signed-in vendor identity
+  - currently mocked in the frontend
+
+### 4.3 Live vendor routes
 
 - `/merch/get-started`
 - `/merch/setup/account`
@@ -63,1011 +121,913 @@ To make the app fully functional, the team needs:
 - `/merch/content-commerce`
 - `/merch/settings`
 
-### 3.3 Current persistence and mock behavior
+## 5. What the Backend Must Deliver
 
-- `src/lib/merchSetup.ts`
-  - Uses `sessionStorage`.
-  - Stores onboarding fields, payout preferences, filenames, and logo preview data URL.
-- `src/pages/MerchGetStartedPage.tsx`
-  - Signup only validates fields locally.
-  - Login only validates fields locally.
-  - Demo account only writes seed values into onboarding session state.
-- `src/pages/MerchOnboardingPage.tsx`
-  - Stores uploaded logo preview in browser memory and session storage.
-  - Stores only document filenames for ID and selfie uploads.
-  - Submitting onboarding does not call an API.
-  - Approval state is simulated in-component.
-- `src/pages/*Page.tsx` across the merch dashboard
-  - Metrics, tables, charts, pipelines, leaderboards, and statuses are static arrays declared inside each page file.
-- `src/lib/download.ts`
-  - Exports current page arrays to CSV entirely in the browser.
-- `src/components/dashboard/Topbar.tsx`
-  - Notifications are hard-coded.
-  - Signed-in user identity is hard-coded.
+Connecting a database alone will not make this product functional. The system needs the full platform around the database.
 
-### 3.4 Placeholder-only or non-functional controls
+At minimum, the production implementation must deliver:
 
-- Most page header actions are visual only and do not open real workflows yet.
-- Merchant email actions use `mailto:` links instead of an internal CRM or support tool.
-- Order row actions route to the customers page instead of an order detail page.
-- Analytics rankings are static strings, not computed from transactions.
-- Risk scoring is static text, not derived from signals.
-- Settlement batches are static rows, not generated from ledger data.
-- Logistics health and rates are static, not sourced from provider integrations.
-- Content commerce placements are static, not linked to any content CMS or event system.
-- Settings shows role cards, but there is no real RBAC enforcement in the app.
+- secure registration, login, sessions, password reset, and role-aware access
+- persistent onboarding drafts across devices and sessions
+- object storage for logos, banners, product media, documents, and campaign assets
+- vendor-scoped APIs for every dashboard route
+- payment capture, reconciliation, ledgering, and payouts
+- shipping rules, carrier integrations, tracking, and shipment updates
+- customer, order, return, and refund workflows
+- notifications and export jobs
+- analytics aggregation
+- audit logs and internal event history
 
-## 4. What The Backend Must Support
+## 6. Recommended Technical Shape
 
-The epic describes six commerce services. Those are valid domain boundaries, but this app still needs a few platform layers around them. The safest implementation path is a modular monolith first, with clean domain boundaries and a shared PostgreSQL database, then split into services later only if scale or team structure demands it.
+The simplest safe implementation is a modular monolith with clear domain boundaries and a shared relational database. That gives the team enough structure to scale later without forcing premature microservices.
 
-### 4.1 Epic-aligned business domains
-
-- Merchant Service
-- Product Service
-- Order Service
-- Payment Service
-- Logistics Service
-- CRM Service
-
-### 4.2 Required platform layers
-
-- Identity and Access
-- File Storage
-- Notifications
-- Risk and Trust
-- Analytics and Reporting
-- Audit and Compliance
-
-## 5. Recommended Core Architecture
-
-### 5.1 Backend shape
+### 6.1 Core runtime components
 
 - API application
-  - REST is enough for this app.
-  - GraphQL is optional, not required.
-- Relational database
-  - PostgreSQL recommended.
-- Object storage
-  - S3-compatible bucket, Firebase Storage, or equivalent.
-- Background job processor
-  - For payouts, notifications, metrics snapshots, document review, and webhook retries.
-- Webhook intake service
-  - For payment provider and logistics provider callbacks.
-- Admin audit/event log
-  - For approval actions, payout approvals, refunds, risk interventions, and role changes.
+  - REST is enough for the first version
+- PostgreSQL
+  - primary transactional database
+- object storage
+  - S3-compatible bucket, Firebase Storage, or equivalent
+- background job runner
+  - notifications, exports, payout jobs, webhook retries, analytics snapshots
+- webhook receiver
+  - payments and shipping provider callbacks
+- email and SMS delivery provider
+- monitoring, logging, and alerting
 
-### 5.2 Tenancy model
+### 6.2 Tenancy model
 
-- Every record should belong to a tenant.
-- The tenant in this app is the merchant organization or internal Blacvolta admin organization.
-- Users should never own marketplace data directly without organization scoping.
-- Roles and permissions should be evaluated within an organization context.
-- Platform admins need elevated cross-tenant visibility.
+The backend should be tenant-aware from day one.
 
-### 5.3 Environments and operational needs
+Recommended model:
 
-- Development environment with seed data.
-- Staging environment with sandbox payment and logistics credentials.
-- Production environment with separate storage buckets, webhook URLs, and secrets.
-- Secret management for payment keys, logistics keys, email credentials, and JWT/session secrets.
-- Monitoring and error reporting.
-- Migration system for schema changes.
-- Backup and restore policy for production.
+- `organizations`
+  - legal or business tenant
+- `stores`
+  - the storefront managed inside BV Creator Hub
+- `users`
+  - human accounts
+- `organization_members`
+  - membership and role assignment
 
-## 6. Recommended Database Domains And Tables
+This leaves room for one organization to run one or more stores later without rewriting the model.
 
-This is the minimum practical data model to support the current marketplace UI and the epic without painting the team into a corner.
+### 6.3 Internal operations surface
 
-### 6.1 Identity and access
+The backend must support internal staff actions, but those actions should not be designed as vendor-facing screens in this app.
+
+Recommended approach:
+
+- internal admin APIs protected by service roles and staff permissions
+- separate internal web surface, or
+- a future admin repo using the same backend
+
+## 7. Recommended Domain Model
+
+The table names below are suggestions, not hard requirements. The important part is the domain separation and the ownership boundaries.
+
+### 7.1 Identity and access
 
 - `users`
-  - Basic account identity.
+  - account identity
 - `sessions`
-  - Browser or device sessions.
+  - browser or device sessions
 - `password_reset_tokens`
-  - Password recovery flow.
+  - reset flow
 - `organizations`
-  - Merchant tenants and internal Blacvolta admin tenants.
+  - legal tenant
+- `stores`
+  - storefront record linked to organization
 - `organization_members`
-  - Users assigned to organizations.
+  - user membership inside organization
 - `roles`
-  - System roles and tenant roles.
+  - role definitions
 - `permissions`
-  - Atomic permission keys.
+  - atomic permission keys
 - `role_permissions`
-  - Many-to-many mapping.
+  - role-to-permission mapping
 - `member_invitations`
-  - Invites for merchant admins and staff.
+  - team invitations
 - `auth_audit_log`
-  - Login, logout, password reset, invite acceptance, lockout.
+  - login, logout, lockout, invite acceptance, reset activity
 
-### 6.2 Merchant governance and onboarding
+### 7.2 Onboarding, verification, and compliance
 
-- `merchant_applications`
-  - Draft and submitted onboarding records.
-- `merchant_profiles`
-  - Approved merchant/storefront business profile.
-- `merchant_status_history`
-  - Submitted, in review, approved, rejected, suspended.
-- `merchant_categories`
-  - Discovery and reporting segmentation.
-- `merchant_review_notes`
-  - Admin review comments.
-- `merchant_documents`
-  - ID, selfie, tax documents, registration docs.
-- `merchant_payout_accounts`
-  - Bank accounts and mobile money destinations.
-- `merchant_settlement_preferences`
-  - Weekly, twice monthly, custom, etc.
-- `merchant_commission_rules`
-  - Merchant-specific overrides when needed.
-- `storefronts`
-  - Public-facing merchant storefront metadata.
+- `store_onboarding_applications`
+  - current and historical onboarding submissions
+- `verification_documents`
+  - uploaded ID, selfie, registration, tax, or supporting documents
+- `verification_checks`
+  - automated and manual verification outcomes
+- `store_status_history`
+  - draft, submitted, changes requested, verified, restricted, suspended
+- `tax_profiles`
+  - TIN and related tax metadata
+- `payout_accounts`
+  - bank or mobile money destinations
+- `payout_preferences`
+  - settlement preference and payout timing
+- `compliance_acceptances`
+  - agreement acceptance records
+- `internal_review_actions`
+  - protected staff review history
 
-### 6.3 Files and assets
+### 7.3 Storefront and brand profile
 
-- `assets`
-  - Uploaded file metadata.
-- `asset_variants`
-  - Thumbnails, resized images, alternate formats.
-- `asset_links`
-  - Polymorphic link table between assets and merchants, products, collections, campaigns, and content placements.
+- `store_profiles`
+  - public-facing store metadata
+- `store_contacts`
+  - support email, phone, and contact points
+- `store_social_links`
+  - Instagram, TikTok, website, and related links
+- `store_assets`
+  - logo, banners, hero imagery, brand assets
+- `store_readiness_checks`
+  - derived readiness states used by the dashboard
+- `featured_surface_assignments`
+  - read-only to vendor unless there is an explicit acceptance flow
 
-### 6.4 Catalog and inventory
+### 7.4 Catalog, pricing, and inventory
 
 - `categories`
-  - Product taxonomy.
+  - product taxonomy
 - `products`
-  - Product-level metadata.
+  - product metadata
 - `product_variants`
-  - SKU-level size and color variants.
-- `product_media`
-  - Images and videos.
+  - size, color, SKU, barcode, and variant dimensions
 - `product_prices`
-  - Base price, sale price, currency, validity windows.
-- `product_inventory`
-  - Current sellable quantity per SKU.
-- `inventory_adjustments`
-  - Manual adjustments, restocks, corrections, returns.
-- `inventory_reservations`
-  - Held stock during checkout or payment authorization.
+  - price, currency, discount windows
+- `product_media`
+  - images and video attachments
 - `product_status_history`
-  - Draft, pending review, approved, rejected, archived.
-- `product_moderation_cases`
-  - Restricted keyword flags and moderation decisions.
-- `restricted_terms`
-  - Platform-level moderation rules.
-
-### 6.5 Collections, drops, and merchandising
-
+  - draft, live, archived, requires changes
 - `collections`
-  - Named drops or grouped merch programs.
+  - collection or drop container
 - `collection_products`
-  - Product assignments to collections.
-- `collection_launch_windows`
-  - Start time, end time, countdown behavior, waitlist windows.
-- `homepage_placements`
-  - Featured brand and collection placements.
-- `merchandising_rules`
-  - Ranking and spotlight rules for the marketplace.
+  - assignment of products to collections
+- `inventory_levels`
+  - current sellable stock by SKU
+- `inventory_adjustments`
+  - restocks, corrections, returns, shrinkage
+- `inventory_reservations`
+  - temporary checkout holds before payment confirmation
+- `stock_alert_rules`
+  - vendor thresholds and alert settings
 
-### 6.6 Customers and CRM
+### 7.5 Orders, fulfillment, and returns
 
 - `customers`
-  - Marketplace customer identity.
+  - buyer identity
 - `customer_addresses`
-  - Shipping and billing addresses.
-- `customer_profiles`
-  - Optional extended metadata for segmentation.
-- `customer_segments`
-  - VIP, repeat buyer, fraud watch, etc.
-- `customer_segment_memberships`
-  - Customer-to-segment assignments.
-- `customer_notes`
-  - Support notes and internal comments.
-- `customer_communication_preferences`
-  - Email, SMS, push opt-ins.
-- `customer_blacklist_entries`
-  - Fraud or abuse controls.
-
-### 6.7 Orders and fulfillment
-
+  - shipping and billing addresses
 - `orders`
-  - Order header.
+  - order header
 - `order_items`
-  - Purchased SKUs.
-- `order_status_history`
-  - Pending, paid, processing, shipped, delivered, returned, refunded, cancelled.
-- `order_addresses`
-  - Snapshot of checkout addresses.
+  - purchased items
+- `order_status_events`
+  - timeline of state changes
 - `shipments`
-  - One or more shipments per order.
+  - fulfillment records
 - `shipment_items`
-  - Item-to-shipment mapping.
+  - item-to-shipment mapping
 - `tracking_events`
-  - Carrier events and timeline.
+  - carrier timeline updates
 - `returns`
-  - Return and exchange records.
+  - return or exchange requests
 - `refunds`
-  - Refund records tied to payment transactions.
+  - refund records
 - `support_cases`
-  - Order-linked or customer-linked support issues.
+  - customer or order support threads
 
-### 6.8 Payments, fees, and settlements
+### 7.6 Payments, fees, ledger, and payouts
 
+- `payment_intents`
+  - payment attempt records
 - `payment_transactions`
-  - Authorizations, captures, failures, reversals.
+  - authorizations, captures, failures, reversals
 - `payment_provider_events`
-  - Raw webhook payloads and processing status.
+  - raw webhook events and processing status
 - `fee_rules`
-  - Platform convenience fees.
-- `commission_rules`
-  - Marketplace commission configuration by merchant, category, or campaign.
+  - platform and processing fee configuration
 - `ledger_entries`
-  - Internal accounting movements.
-- `settlement_batches`
-  - Grouped merchant payouts.
-- `settlement_batch_items`
-  - Per-merchant settlement lines.
+  - double-entry or equivalent internal ledger movements
+- `settlement_cycles`
+  - windows used to group cleared revenue
+- `settlement_items`
+  - per-store amount calculations within a cycle
 - `payouts`
-  - Actual transfer attempts and results.
+  - transfer attempts and outcomes
+- `payout_failures`
+  - failed transfer diagnostics and retry handling
 - `disputes`
-  - Chargebacks and payment disputes.
-- `refund_reasons`
-  - Structured refund reason taxonomy.
+  - chargebacks and disputes
 
-### 6.9 Logistics
+### 7.7 Shipping and carrier configuration
 
-- `logistics_providers`
-  - DHL, FedEx, local providers, status, capabilities.
-- `provider_credentials`
-  - Encrypted API credentials or references to vault secrets.
+- `carriers`
+  - available shipping partners
+- `carrier_accounts`
+  - linked credentials or references to secured secrets
 - `shipping_zones`
-  - Geography definitions.
-- `shipping_rate_rules`
-  - Fixed, tiered, or API-derived pricing rules.
+  - geography definitions
+- `shipping_rules`
+  - fixed, tiered, or API-based shipping logic
 - `shipping_quotes`
-  - Rate quotes returned to checkout.
-- `provider_shipments`
-  - External provider shipment IDs and metadata.
-- `delivery_sla_breaches`
-  - Delay monitoring.
+  - quotes returned during checkout
+- `delivery_promises`
+  - ETA rules shown to customers
+- `shipment_exceptions`
+  - delays, failed deliveries, and investigations
 
-### 6.10 Risk and trust
+### 7.8 Customers and CRM
 
-- `risk_cases`
-  - Manual and automated investigations.
-- `risk_signals`
-  - Refund spikes, card velocity, complaint spikes, restricted keyword triggers.
-- `merchant_risk_profiles`
-  - Merchant-level risk state and score.
-- `transaction_risk_scores`
-  - Order/payment-level risk scoring outputs.
-- `risk_actions`
-  - Hold payout, suspend merchant, cancel order, refund, unblock.
-- `watchlist_entries`
-  - Customer, merchant, card fingerprint, device, IP, address.
+- `customer_tags`
+  - VIP, repeat buyer, support-sensitive, manual watch flags
+- `customer_notes`
+  - internal vendor notes
+- `customer_segments`
+  - dynamic or static segments
+- `customer_segment_memberships`
+  - customer-to-segment mapping
+- `communication_preferences`
+  - consent and channel preferences
+- `campaign_recipients`
+  - customers reached by specific campaigns
 
-### 6.11 Promotions and content commerce
+### 7.9 Promotions, collections, and content commerce
 
 - `campaigns`
-  - Flash sales, percentage discounts, free shipping, BOGO.
+  - promotions and launch campaigns
 - `campaign_rules`
-  - Eligibility logic.
+  - eligibility, threshold, and timing logic
 - `promo_codes`
-  - Redeemable codes.
+  - redeemable codes
 - `campaign_assets`
-  - Banners, images, creative.
-- `sponsored_placements`
-  - Paid brand placement inventory.
+  - banners and creative
 - `content_surfaces`
-  - Editorial, event, creator, podcast, story surfaces.
+  - editorial, creator, event, landing page, podcast, story surfaces
 - `content_placements`
-  - A specific shoppable placement on a surface.
+  - placement records
 - `content_product_links`
-  - Products attached to content.
-- `creator_profiles`
-  - Artists, DJs, tastemakers, hosts.
-- `creator_store_links`
-  - Shareable storefront or creator-specific commerce entry points.
+  - products linked into a content placement
+- `creator_links`
+  - shareable links or creator-specific traffic destinations
+- `attribution_events`
+  - traffic and conversion attribution
 
-### 6.12 Notifications, analytics, and audits
+### 7.10 Notifications, exports, and analytics
 
 - `notifications`
-  - User notifications in the topbar/activity feed.
+  - in-app activity feed
 - `notification_deliveries`
-  - Email, SMS, push delivery attempts.
+  - email, SMS, push delivery attempts
 - `metric_snapshots`
-  - Precomputed KPI time series.
-- `traffic_attribution_events`
-  - Feed, search, creator store, push, external link attribution.
+  - cached KPI time series
 - `report_exports`
-  - Server-side export jobs.
+  - server-side export jobs and generated files
 - `audit_logs`
-  - Cross-domain immutable action history.
+  - immutable cross-domain history
 
-## 7. Route-By-Route Backend Requirements
+## 8. Current Route-by-Route Backend Requirements
 
-### 7.1 `/merch/get-started`
+This section maps the live UI to backend behavior.
 
-Current frontend behavior:
+### 8.1 `/merch/get-started`
 
-- Signup validates business name, contact person, phone, email, and password locally.
-- Signup writes a draft onboarding payload into session storage and redirects.
-- Login validates locally and immediately navigates to `/merch/analytics`.
-- Demo account seeds fake onboarding data.
+This route needs real authentication.
 
-Backend requirements:
+Vendor-visible responsibilities:
+
+- sign up
+- log in
+- remember email on this device
+- open password recovery flow
+
+Backend responsibilities:
 
 - `POST /auth/register`
 - `POST /auth/login`
 - `POST /auth/logout`
+- `GET /auth/session`
 - `POST /auth/forgot-password`
 - `POST /auth/reset-password`
-- `GET /me`
-- Password hashing and secure session issuance.
-- Email uniqueness enforcement.
-- Optional email verification and phone verification.
-- Create or resume a merchant application draft on signup.
-- Rate limiting, brute-force protection, and audit logging.
 
-Primary tables:
+Expected behavior:
 
-- `users`
-- `sessions`
-- `organizations`
-- `organization_members`
-- `merchant_applications`
-- `auth_audit_log`
+- create the first user for the organization
+- create the organization and draft store record
+- create or resume the onboarding application
+- prevent duplicate email registration
+- rate-limit repeated login attempts
+- audit login and reset activity
 
-### 7.2 `/merch/setup/account`, `/verification`, `/payout`, `/review`
+### 8.2 `/merch/setup/account`, `/verification`, `/payout`, `/review`
 
-Current frontend behavior:
+This flow should move from browser session state into persistent onboarding records.
 
-- Form state is saved in `sessionStorage`.
-- Logo upload stores a client-side preview data URL.
-- ID and selfie uploads store filenames only.
-- Final submit just flips the screen into a success state.
+Backend responsibilities:
 
-Backend requirements:
+- `GET /onboarding/current`
+- `PATCH /onboarding/current`
+- `POST /onboarding/current/uploads`
+- `POST /onboarding/current/submit`
+- `GET /onboarding/current/status`
 
-- `GET /merchant-applications/current`
-- `PATCH /merchant-applications/current`
-- `POST /merchant-applications/current/documents`
-- `POST /merchant-applications/current/submit`
-- `GET /merchant-applications/current/status`
-- File upload flow with pre-signed upload URLs or direct storage integration.
-- Document virus scanning and mime-type validation.
-- Merchant review workflow with admin approve/reject actions.
-- Bank/mobile money validation.
-- KYC/KYB review notes and status history.
-- Resume onboarding across sessions and devices.
+What must be stored:
 
-Primary tables:
+- brand name
+- contact person
+- email
+- phone
+- business type
+- social links
+- logo and brand assets
+- business registration data
+- tax details
+- payout destination and settlement preference
+- seller agreement acceptance
 
-- `merchant_applications`
-- `merchant_documents`
-- `assets`
-- `merchant_payout_accounts`
-- `merchant_settlement_preferences`
-- `merchant_status_history`
+Important implementation note:
 
-### 7.3 `/merch/analytics`
+The vendor app should show clear statuses such as:
 
-Current frontend behavior:
+- draft
+- submitted
+- more information required
+- verified
 
-- Static KPIs, chart points, traffic-source shares, and top merchants.
-- Export button downloads the hard-coded chart series as CSV.
+It should not display internal reviewer notes verbatim unless product explicitly decides to expose them.
 
-Backend requirements:
+### 8.3 `/merch/analytics`
 
-- `GET /analytics/overview`
-- `GET /analytics/gmv-trend`
-- `GET /analytics/traffic-sources`
-- `GET /analytics/top-merchants`
-- Date range filtering.
-- Merchant, category, and region filtering.
-- Precomputed or cached aggregate queries.
-- Attribution event pipeline for feed, creator store, search, push, and external links.
+This is the vendor's own performance overview.
 
-Primary tables:
+It needs:
 
-- `orders`
-- `order_items`
-- `payment_transactions`
-- `ledger_entries`
-- `metric_snapshots`
-- `traffic_attribution_events`
+- sales summary
+- units sold
+- conversion rate
+- returning customer rate
+- sales and order trend
+- traffic sources
+- top products
+- export support
 
-### 7.4 `/merch/merchants`
+Backend responsibilities:
 
-Current frontend behavior:
+- `GET /dashboard/summary`
+- `GET /dashboard/sales-trend`
+- `GET /dashboard/traffic-sources`
+- `GET /dashboard/top-products`
+- `POST /exports/analytics`
 
-- Static merchant approval pipeline.
-- Static statuses like Approved, Verification, Payout Setup, Featured.
-- Email actions use `mailto:`.
+Source data:
 
-Backend requirements:
+- orders
+- order items
+- cleared payment records
+- attribution events
+- customer repeat-purchase calculations
 
-- `GET /merchants`
-- `GET /merchants/:merchantId`
-- `PATCH /merchants/:merchantId/status`
-- `POST /merchants/:merchantId/review-notes`
-- `PATCH /merchants/:merchantId/commission-rule`
-- `PATCH /merchants/:merchantId/featured`
-- Search, filters, sorting, pagination.
-- Merchant detail screen or side panel.
-- Approval queue and KYB review evidence.
-- Merchant notes, tags, categories, payout readiness, and suspension controls.
+### 8.4 `/merch/merchants` as Storefront Profile
 
-Primary tables:
+Treat this route as the vendor's storefront profile workspace.
 
-- `merchant_profiles`
-- `merchant_status_history`
-- `merchant_review_notes`
-- `merchant_commission_rules`
-- `merchant_documents`
-- `storefronts`
+It needs:
 
-### 7.5 `/merch/products`
+- brand story
+- social links
+- support contact details
+- logo and campaign asset management
+- payout readiness and profile completeness signals
+- read-only visibility into featured placements or storefront surfaces
 
-Current frontend behavior:
+Backend responsibilities:
 
-- Static moderation queue with status labels like Approved, Low Stock, Featured, Pending Review.
-- No real product detail, no variant data, no actual approval actions.
+- `GET /storefront`
+- `PATCH /storefront`
+- `POST /storefront/assets`
+- `DELETE /storefront/assets/:assetId`
+- `PATCH /storefront/social-links`
+- `PATCH /storefront/contacts`
+- `GET /storefront/readiness`
+- `GET /storefront/placements`
 
-Backend requirements:
+Do not build this as a cross-vendor merchant management endpoint for the vendor UI.
+
+### 8.5 `/merch/products`
+
+This route needs a full catalog management API.
+
+It needs:
+
+- product list
+- product detail
+- create, edit, archive, publish, and unpublish
+- price and sale windows
+- media uploads
+- collection assignment
+- variant and SKU management
+- stock visibility
+- bulk export
+
+Backend responsibilities:
 
 - `GET /products`
 - `GET /products/:productId`
 - `POST /products`
 - `PATCH /products/:productId`
-- `PATCH /products/:productId/status`
+- `DELETE /products/:productId`
 - `POST /products/:productId/media`
-- `GET /catalog/moderation-queue`
-- Category and brand assignment.
-- Variant CRUD and SKU generation.
-- Media upload and ordering.
-- Restricted keyword detection and moderation workflow.
-- Draft, review, approved, rejected lifecycle.
+- `POST /products/:productId/variants`
+- `PATCH /products/:productId/status`
+- `POST /exports/products`
 
-Primary tables:
+Important note:
 
-- `products`
-- `product_variants`
-- `product_media`
-- `categories`
-- `product_status_history`
-- `product_moderation_cases`
-- `restricted_terms`
+If internal review exists, the vendor-facing status should read like a publishing workflow, for example `requires changes`, not like an internal moderation queue.
 
-### 7.6 `/merch/orders`
+### 8.6 `/merch/orders`
 
-Current frontend behavior:
+This route needs real order operations.
 
-- Static kanban columns for Pending, Paid, Processing, Shipped, Delivered, Returned.
-- Static order queue rows with fake refund state.
-- No real order detail screen.
+It needs:
 
-Backend requirements:
+- search and filter by order, customer, status, date, fulfillment state
+- order detail view
+- packing and shipment state transitions
+- return and refund handling
+- links into customer support context
+
+Backend responsibilities:
 
 - `GET /orders`
 - `GET /orders/:orderId`
 - `PATCH /orders/:orderId/status`
+- `POST /orders/:orderId/shipments`
+- `GET /orders/:orderId/shipments`
+- `POST /orders/:orderId/returns`
 - `POST /orders/:orderId/refunds`
-- `POST /orders/:orderId/cancel`
-- `POST /orders/:orderId/support-cases`
-- Search by order ID, customer, merchant, date, status, payment state.
-- Full order timeline from payment through delivery and refund.
-- Split shipment support if needed.
-- Return and exchange workflow.
-- Audit trail for every manual intervention.
+- `POST /exports/orders`
 
-Primary tables:
+This route should eventually move away from generic table actions and into proper order detail endpoints.
 
-- `orders`
-- `order_items`
-- `order_status_history`
-- `shipments`
-- `tracking_events`
-- `refunds`
-- `support_cases`
+### 8.7 `/merch/inventory`
 
-### 7.7 `/merch/inventory`
+This route needs inventory integrity, not just a stock list.
 
-Current frontend behavior:
+It needs:
 
-- Static SKU watchlist with stock counts and health labels.
-- Auto deduction is shown as enabled but no stock logic exists.
+- current stock by SKU
+- low-stock and out-of-stock thresholds
+- adjustment history
+- reservation-aware availability
+- alerts tied to campaigns and launches
 
-Backend requirements:
+Backend responsibilities:
 
 - `GET /inventory`
-- `PATCH /inventory/:variantId`
+- `GET /inventory/:sku/history`
 - `POST /inventory/adjustments`
+- `PATCH /inventory/alerts`
 - `GET /inventory/alerts`
-- SKU-level stock counts.
-- Threshold alerts.
-- Reservation and decrement logic tied to checkout and payment success.
-- Manual restock and correction history.
-- Out-of-stock safeguards for active campaigns and collections.
+- `POST /exports/inventory`
 
-Primary tables:
+The stock model must be consistent with checkout reservations and payment confirmation or the analytics and order surfaces will drift.
 
-- `product_variants`
-- `product_inventory`
-- `inventory_adjustments`
-- `inventory_reservations`
+### 8.8 `/merch/collections`
 
-### 7.8 `/merch/collections`
+This route needs collection and launch management.
 
-Current frontend behavior:
+It needs:
 
-- Static collection cards with timing notes like Live now or Launches in 5 days.
-- No launch scheduling or product assignment exists.
+- collection CRUD
+- product assignment
+- launch windows and countdowns
+- featured flags
+- export
 
-Backend requirements:
+Backend responsibilities:
 
 - `GET /collections`
 - `GET /collections/:collectionId`
 - `POST /collections`
 - `PATCH /collections/:collectionId`
 - `POST /collections/:collectionId/products`
+- `DELETE /collections/:collectionId/products/:productId`
 - `PATCH /collections/:collectionId/launch-window`
-- Support timed drops, countdowns, waitlists, featured placement, and launch calendars.
-- Track post-drop performance.
+- `POST /exports/collections`
 
-Primary tables:
+### 8.9 `/merch/promotions`
 
-- `collections`
-- `collection_products`
-- `collection_launch_windows`
-- `homepage_placements`
+This route needs real campaign and discount logic.
 
-### 7.9 `/merch/promotions`
+It needs:
 
-Current frontend behavior:
+- promotions list
+- campaign status
+- discount logic
+- promo code support
+- free shipping and timed sale rules
+- campaign exports
 
-- Static campaign board with Live, Planned, Awaiting assets, and similar labels.
-- No discount engine or code redemption exists.
-
-Backend requirements:
+Backend responsibilities:
 
 - `GET /campaigns`
 - `GET /campaigns/:campaignId`
 - `POST /campaigns`
 - `PATCH /campaigns/:campaignId`
-- `POST /promo-codes`
-- `PATCH /promo-codes/:promoCodeId`
-- Discount engine for percentage, BOGO, free shipping, flash sale, and scheduled campaigns.
-- Campaign asset uploads.
-- Eligibility by merchant, product, collection, customer segment, and order threshold.
-- Sponsored placement inventory and reporting.
+- `POST /campaigns/:campaignId/rules`
+- `POST /campaigns/:campaignId/codes`
+- `PATCH /campaigns/:campaignId/status`
+- `POST /exports/campaigns`
 
-Primary tables:
+### 8.10 `/merch/customers`
 
-- `campaigns`
-- `campaign_rules`
-- `promo_codes`
-- `campaign_assets`
-- `sponsored_placements`
+This route needs vendor-safe CRM features.
 
-### 7.10 `/merch/customers`
+It needs:
 
-Current frontend behavior:
+- customer list
+- lifetime value
+- repeat-purchase signals
+- support flags
+- notes
+- segments or tags
+- location insights
+- export
 
-- Static customer profiles with fake LTV, order counts, support notes, and fraud status.
-- Location shares are hard-coded.
-
-Backend requirements:
+Backend responsibilities:
 
 - `GET /customers`
 - `GET /customers/:customerId`
 - `POST /customers/:customerId/notes`
-- `PATCH /customers/:customerId/segment-memberships`
-- `PATCH /customers/:customerId/watchlist-status`
-- Search by name, email, phone, order history, geography, segment.
-- Customer detail with order history and support history.
-- Customer segmentation and CRM-ready statuses.
-- Messaging consent tracking.
-- Fraud blacklist and support workflows.
+- `POST /customers/:customerId/tags`
+- `GET /customers/segments`
+- `POST /exports/customers`
 
-Primary tables:
+Any communication feature tied to this route should respect consent, suppression, and local compliance requirements.
 
-- `customers`
-- `customer_addresses`
-- `customer_profiles`
-- `customer_segments`
-- `customer_segment_memberships`
-- `customer_notes`
-- `customer_blacklist_entries`
+### 8.11 `/merch/payments`
 
-### 7.11 `/merch/payments`
+This route needs a proper financial read model backed by a ledger.
 
-Current frontend behavior:
+It needs:
 
-- Static gross sales, commission, fee, and payout metrics.
-- Static payout batch table.
-- Chart is based on hard-coded monthly values.
+- gross sales
+- net payouts
+- fees deducted
+- pending settlement
+- settlement windows
+- payout history
+- transaction reconciliation
 
-Backend requirements:
+Backend responsibilities:
 
-- `GET /payments/summary`
-- `GET /payments/transactions`
-- `GET /settlements`
-- `GET /settlements/:batchId`
-- `POST /settlements/:batchId/approve`
-- `POST /refunds`
-- Payment provider integration, webhook handling, reconciliation, and internal ledgering.
-- Configurable commission and convenience fee rules.
-- Settlement batch generation after risk review.
-- Payout approval workflow and payout status callbacks.
-- Refund and dispute handling.
+- `GET /finance/summary`
+- `GET /finance/settlements`
+- `GET /finance/payouts`
+- `GET /finance/transactions`
+- `POST /exports/finance`
 
-Primary tables:
+Required backend behavior:
 
-- `payment_transactions`
-- `payment_provider_events`
-- `fee_rules`
-- `commission_rules`
-- `ledger_entries`
-- `settlement_batches`
-- `settlement_batch_items`
-- `payouts`
-- `disputes`
-- `refunds`
+- reconcile provider webhooks
+- compute net amounts after fees
+- group settled revenue into payout cycles
+- track payout success, failure, and retry states
 
-### 7.12 `/merch/logistics`
+### 8.12 `/merch/logistics`
 
-Current frontend behavior:
+This route needs vendor-facing shipping configuration and shipment visibility.
 
-- Static provider performance grid.
-- Providers mention API live rates or manual fallback, but nothing is connected.
+It needs:
 
-Backend requirements:
+- connected carriers
+- shipping rules
+- zone logic
+- service levels
+- shipment health
+- tracking visibility
 
-- `GET /logistics/providers`
-- `POST /logistics/providers`
-- `PATCH /logistics/providers/:providerId`
-- `GET /logistics/rate-rules`
-- `POST /logistics/quotes`
-- `GET /shipments`
-- `POST /shipments/:shipmentId/track`
-- Provider registry, encrypted credentials, status monitoring, and capability modeling.
-- Shipping zones and rate rules.
-- Checkout quote retrieval.
-- Shipment creation, label handling, and tracking updates.
-- Delay detection and SLA breach reporting.
+Backend responsibilities:
 
-Primary tables:
+- `GET /shipping/carriers`
+- `GET /shipping/rules`
+- `POST /shipping/rules`
+- `PATCH /shipping/rules/:ruleId`
+- `GET /shipping/shipments`
+- `GET /shipping/shipments/:shipmentId/tracking`
+- `POST /exports/shipping`
 
-- `logistics_providers`
-- `provider_credentials`
-- `shipping_zones`
-- `shipping_rate_rules`
-- `shipping_quotes`
-- `provider_shipments`
-- `tracking_events`
-- `delivery_sla_breaches`
+Carrier credentials should never be exposed to the browser. Store only references to secured credentials or use a vault-backed connection model.
 
-### 7.13 `/merch/risk`
+### 8.13 `/merch/risk` as Account Health
 
-Current frontend behavior:
+This route should be implemented as vendor-facing account health, not internal fraud operations.
 
-- Static risk queue with fake case IDs, scores, and signals.
-- No actual case workflow or scoring engine exists.
+It needs:
 
-Backend requirements:
+- verification tasks
+- payout readiness issues
+- catalog issues
+- shipping exceptions
+- policy alerts
+- clear next actions for the vendor
 
-- `GET /risk/cases`
-- `GET /risk/cases/:caseId`
-- `POST /risk/cases/:caseId/actions`
-- `GET /risk/signals`
-- `GET /risk/merchant-profiles`
-- Automated and manual case creation.
-- Risk scoring on orders, payments, merchants, and catalog submissions.
-- Payout holds, merchant suspensions, order cancellations, and refund interventions.
-- Immutable audit history for all decisions.
+Backend responsibilities:
 
-Primary tables:
+- `GET /account-health/summary`
+- `GET /account-health/tasks`
+- `GET /account-health/issues`
+- `POST /account-health/issues/:issueId/acknowledge`
 
-- `risk_cases`
-- `risk_signals`
-- `merchant_risk_profiles`
-- `transaction_risk_scores`
-- `risk_actions`
-- `watchlist_entries`
+Important rule:
 
-### 7.14 `/merch/content-commerce`
+This surface should expose vendor-actionable states, not raw internal scoring or detection logic.
 
-Current frontend behavior:
+Good vendor-facing examples:
 
-- Static placements for editorial, event, creator, and podcast surfaces.
-- Linked SKU counts are fake.
+- missing tax information
+- payout account requires update
+- listing needs care instructions
+- recent return rate needs attention
 
-Backend requirements:
+Bad vendor-facing examples:
 
-- `GET /content/surfaces`
+- hidden fraud score
+- internal decision notes
+- rule engine outputs that have no vendor action attached
+
+### 8.14 `/merch/content-commerce`
+
+This route needs content-linked commerce records.
+
+It needs:
+
+- placements list
+- linked products
+- surface type
+- placement status
+- attribution reporting
+- export support
+
+Backend responsibilities:
+
 - `GET /content/placements`
+- `GET /content/placements/:placementId`
 - `POST /content/placements`
 - `PATCH /content/placements/:placementId`
 - `POST /content/placements/:placementId/products`
-- Support shoppable editorial, event-linked merch, creator capsules, and shareable storefront links.
-- Link products to content surfaces with publish windows and reporting.
-- Track attributed conversions from content surfaces into orders.
+- `GET /content/attribution`
+- `POST /exports/content-commerce`
 
-Primary tables:
+### 8.15 `/merch/settings`
 
-- `content_surfaces`
-- `content_placements`
-- `content_product_links`
-- `creator_profiles`
-- `creator_store_links`
-- `traffic_attribution_events`
+This route needs real team, access, payout, and shipping configuration APIs.
 
-### 7.15 `/merch/settings`
+It needs:
 
-Current frontend behavior:
+- team members
+- invitations
+- role assignments
+- payout connections
+- shipping connections
+- permission-aware actions
 
-- Static roles and logistics footprint cards.
-- No user management, invites, permissions editor, or real policy controls exist.
+Backend responsibilities:
 
-Backend requirements:
+- `GET /settings/team`
+- `POST /settings/invitations`
+- `PATCH /settings/members/:memberId/role`
+- `DELETE /settings/members/:memberId`
+- `GET /settings/payout-accounts`
+- `POST /settings/payout-accounts`
+- `GET /settings/shipping-connections`
+- `POST /settings/shipping-connections`
 
-- `GET /roles`
-- `POST /roles`
-- `PATCH /roles/:roleId`
-- `GET /members`
-- `POST /members/invite`
-- `PATCH /members/:memberId`
-- `GET /settings/policies`
-- `PATCH /settings/policies`
-- Role and permission management.
-- Merchant admin and staff invites.
-- Policy settings for security, fee controls, and integration toggles.
-- Real permission checks enforced in the API and frontend navigation.
+This route is also where RBAC becomes enforceable across the rest of the app.
 
-Primary tables:
+## 9. Recommended API Conventions
 
-- `roles`
-- `permissions`
-- `role_permissions`
-- `organization_members`
-- `member_invitations`
-- `audit_logs`
+The team should align on a few API rules early to avoid churn.
 
-### 7.16 Shared dashboard shell, profile, and notifications
-
-Current frontend behavior:
+- version APIs from the start
+- use stable IDs, not display names, as foreign keys
+- return organization and store context in session/bootstrap payloads
+- use cursor or page-based pagination consistently
+- support filtering and sorting in list endpoints
+- return structured validation errors for forms
+- use idempotency keys on payment and payout actions
+- verify webhook signatures
+- make exports asynchronous once datasets grow
+- include audit metadata on write actions
 
-- Topbar profile chip is hard-coded.
-- Notifications are hard-coded marketplace alerts.
-- Sidebar and routing are static configuration.
+Recommended bootstrap call after login:
 
-Backend requirements:
+- `GET /app/bootstrap`
 
-- `GET /me`
-- `GET /notifications`
-- `PATCH /notifications/:notificationId/read`
-- Current user profile.
-- Current organization context.
-- Unread notification counts.
-- Real activity generated from merchant reviews, moderation flags, settlement status, risk alerts, and campaign events.
+That response can include:
 
-Primary tables:
+- authenticated user
+- organization
+- store
+- role and permissions
+- onboarding state
+- notification count
+- top-level account health summary
 
-- `users`
-- `organizations`
-- `notifications`
-- `notification_deliveries`
+## 10. Integration Requirements
 
-## 8. External Integrations Required
+### 10.1 Authentication and account security
 
-### 8.1 Payments
+- password hashing
+- secure sessions or signed tokens with refresh strategy
+- password reset email flow
+- login audit logging
+- optional MFA later
+- session revocation
 
-- Payment gateway for marketplace checkout and webhook callbacks.
-- Payout provider or payout module for merchant settlements.
-- Support for Ghana payment methods and mobile money flows.
-- Refund and dispute APIs.
+### 10.2 Payments
 
-Epic-aligned commercial rules that should be configurable rather than hard-coded:
+Paystack is the obvious first payment integration based on the current product assumptions.
 
-- Marketplace commission: `7.5%` baseline.
-- Convenience fee: `1.5%` baseline.
-- Delivery commission or logistics margin: `5%` to `10%`.
+The payment implementation needs:
 
-### 8.2 Logistics
+- payment initiation
+- webhook confirmation
+- reconciliation
+- refund support
+- dispute handling
+- payout initiation or payout export workflow depending on provider model
 
-- DHL integration.
-- FedEx integration.
-- Local courier integration or manual provider adapter.
-- Quote retrieval, shipment booking, tracking updates, and provider health monitoring.
+### 10.3 Shipping
 
-### 8.3 Notifications and communications
+The shipping layer needs:
 
-- Transactional email provider.
-- Optional SMS or WhatsApp provider for payout, order, and delivery alerts.
-- Internal notification pipeline for topbar activity feed.
+- rate quote support
+- service-level and zone configuration
+- label or shipment creation if providers support it
+- tracking update ingestion
+- shipment exception handling
 
-### 8.4 File storage and document handling
+### 10.4 Storage and CDN
 
-- Secure storage bucket.
-- Signed uploads.
-- Signed downloads or protected admin-only file access.
-- Basic document validation and malware scanning.
+Store these outside the database:
 
-### 8.5 Analytics and attribution
+- logos
+- banners
+- product images
+- product videos
+- onboarding documents
+- campaign assets
 
-- Event tracking pipeline for traffic source attribution.
-- Scheduled aggregation jobs for dashboard metrics.
-- Optional BI warehouse later if volume grows.
+Requirements:
 
-## 9. Frontend Work Required To Consume The Backend
+- signed upload flow
+- mime-type validation
+- file size limits
+- image optimization where needed
+- signed download URLs for protected files
 
-- Introduce an API client layer.
-- Add authenticated route protection.
-- Add session persistence and logout handling.
-- Replace all static arrays with API-backed queries.
-- Replace session-storage onboarding with API-backed draft persistence.
-- Replace browser-only file handling with real upload flows.
-- Replace browser-only CSV export with server-generated export jobs where datasets get large.
-- Add loading states, error states, empty states, and permission-denied states.
-- Add pagination, search, sort, and filter query params for table-heavy pages.
-- Add optimistic updates carefully only where safe.
-- Add mutation confirmations for approval, suspension, refund, and payout actions.
-- Add detail views or drawers for merchants, products, orders, customers, settlements, and risk cases.
+### 10.5 Messaging
 
-Recommended frontend additions:
+The platform should support:
 
-- TanStack Query or equivalent for server-state management.
-- Schema validation for API payloads.
-- Centralized auth context.
-- Shared table/filter primitives.
+- email notifications
+- optional SMS for order or payout alerts
+- queue-backed delivery and retry
+- per-channel audit trail
 
-## 10. What Is Missing Beyond The Admin Console
+## 11. Security, Audit, and Compliance
 
-The current repo is mostly an operations console. Several parts of the epic assume other surfaces that do not exist in this codebase yet. The backend team should know these dependencies exist even if the UI is not built here yet.
+The first production version should treat the areas below as non-negotiable.
 
-- Public customer storefront pages.
-- Customer cart and checkout UI.
-- Merchant self-service product creation and campaign editing UI.
-- Full merchant detail pages.
-- Full order detail pages.
-- Full settlement detail pages.
-- Full risk case detail pages.
-- Actual CRM messaging composer or inbox.
-- Public creator storefront link destinations.
-
-If those surfaces are being built by another team or in another repo, this backend still needs to support them.
-
-## 11. Recommended Delivery Order
-
-### Phase 1: Foundation
+- RBAC on every write endpoint
+- strict tenant scoping on every read and write
+- server-side validation of ownership and store access
+- audit logs for onboarding submission, payout changes, refunds, role changes, and compliance actions
+- encryption for sensitive fields and secrets
+- signed webhook verification
+- rate limiting for auth and public-facing write endpoints
+- backups and restore procedures
+- operational logging and error tracking
 
-- Set up PostgreSQL schema and migrations.
-- Set up auth, sessions, current-user endpoint, and organization scoping.
-- Set up object storage and upload flows.
-- Add roles and permissions model.
-- Add audit logging framework.
-
-### Phase 2: Merchant onboarding and governance
-
-- Implement auth pages and onboarding save/resume.
-- Implement merchant application submission and admin review.
-- Implement merchant profiles, storefront records, and payout destinations.
-- Implement merchant list, filters, and status management.
-
-### Phase 3: Catalog, inventory, and collections
-
-- Implement products, variants, media, and moderation states.
-- Implement inventory tables, adjustments, thresholds, and reservations.
-- Implement collections, launch windows, and featured placements.
-
-### Phase 4: Orders, payments, and logistics
-
-- Implement orders and order status history.
-- Integrate payment provider and webhooks.
-- Implement ledger, fees, commissions, settlements, and payouts.
-- Implement logistics providers, zones, quotes, shipments, and tracking.
-
-### Phase 5: CRM, risk, and content commerce
-
-- Implement customers, segmentation, notes, and support cases.
-- Implement risk case creation, scoring, and interventions.
-- Implement campaigns, promo codes, sponsored placements, and content-product linking.
-
-### Phase 6: Analytics, notifications, and hardening
-
-- Implement event tracking and dashboard aggregates.
-- Implement notification feed and transactional alerts.
-- Replace large client-side exports with server-side jobs.
-- Add observability, rate limiting, retry logic, backups, and compliance controls.
-
-## 12. Developer Checklist
-
-### Foundation checklist
-
-- [ ] Choose backend framework and migration tool.
-- [ ] Provision PostgreSQL.
-- [ ] Provision storage bucket.
-- [ ] Set up secrets management.
-- [ ] Create base tenant-aware auth model.
-- [ ] Create RBAC tables and seed roles.
-- [ ] Add audit logging.
-- [ ] Add background jobs and webhook retry handling.
-
-### Merchant onboarding checklist
-
-- [ ] Implement register, login, logout, forgot-password, reset-password.
-- [ ] Create onboarding draft API.
-- [ ] Create document upload API.
-- [ ] Validate bank/mobile money payout destinations.
-- [ ] Build merchant review queue endpoints.
-- [ ] Build approve, reject, suspend actions.
-
-### Catalog and inventory checklist
-
-- [ ] Build categories, products, variants, and media models.
-- [ ] Build moderation workflow.
-- [ ] Build restricted-term rules.
-- [ ] Build SKU-level inventory tracking.
-- [ ] Build stock reservation and deduction logic.
-- [ ] Build low-stock alerts.
-
-### Order and payment checklist
-
-- [ ] Build order, order item, shipment, return, and refund models.
-- [ ] Integrate payment checkout flows and webhooks.
-- [ ] Build commission and fee-rule engine.
-- [ ] Build internal ledger.
-- [ ] Build settlement batch generation.
-- [ ] Build payout approval and payout execution tracking.
-
-### Logistics checklist
-
-- [ ] Build providers, zones, and rate rules.
-- [ ] Store provider credentials securely.
-- [ ] Build quote retrieval and shipment booking.
-- [ ] Build tracking event ingestion.
-- [ ] Build SLA breach detection.
-
-### CRM, risk, and content checklist
-
-- [ ] Build customer profiles and addresses.
-- [ ] Build customer notes and segmentation.
-- [ ] Build support case model.
-- [ ] Build risk signals, cases, and intervention actions.
-- [ ] Build campaigns, promo codes, and sponsored placement support.
-- [ ] Build content surfaces and product-link models.
-
-### Frontend integration checklist
-
-- [ ] Add API client and auth context.
-- [ ] Replace static arrays with live queries.
-- [ ] Replace session-storage onboarding with server-backed drafts.
-- [ ] Add loading, empty, error, and unauthorized states.
-- [ ] Add filters, search, sort, and pagination.
-- [ ] Add real detail pages or drawers for key entities.
-- [ ] Add confirmation flows for destructive actions.
-
-## 13. Key Risks If The Team Skips Certain Pieces
-
-- If the team adds only a database and no RBAC, merchant and internal admin permissions will be unsafe.
-- If the team adds only CRUD APIs and no audit log, finance and governance actions will be hard to trace.
-- If the team adds payments but no ledger model, settlement bugs will be difficult to reconcile.
-- If the team adds inventory without reservation logic, flash drops will oversell.
-- If the team adds logistics quotes without webhook tracking, order status will drift from provider reality.
-- If the team adds CRM data without consent tracking, communications may create compliance problems.
-- If the team adds dashboards without precomputed aggregates, analytics pages may become expensive and slow.
-
-## 14. Final Recommendation
-
-- Build this as a modular monolith first, not as many independent microservices on day one.
-- Use PostgreSQL as the source of truth.
-- Keep all marketplace data tenant-scoped.
-- Make commercial rules configurable.
-- Treat uploads, payments, payouts, and risk interventions as audited workflows.
-- Ship in phases, starting with auth, onboarding, merchant governance, product catalog, and inventory before moving deeper into payouts, logistics, and analytics.
-
-That sequence matches the current UI, the epic, and the fastest path from prototype to a fully operational marketplace admin platform.
+## 12. Frontend Integration Work Still Required
+
+Once the backend exists, the frontend still needs a structured integration pass.
+
+- replace static arrays with API data
+- replace `sessionStorage` onboarding persistence with backend draft persistence
+- add loading, empty, and error states to merch routes
+- add auth bootstrap and session expiry handling
+- add route protection for authenticated vendor areas
+- replace local CSV generation with server-backed exports where needed
+- replace placeholder modals with real workflows where applicable
+- add detail views for orders, customers, products, payouts, and placements
+
+## 13. Delivery Plan
+
+The safest build sequence is below.
+
+### Phase 1: foundation
+
+- PostgreSQL schema and migrations
+- auth and session model
+- organization and store tenancy
+- storage integration
+- background jobs
+- audit log base layer
+
+### Phase 2: onboarding and store profile
+
+- registration and login
+- onboarding draft persistence
+- document uploads
+- verification state machine
+- payout account setup
+- storefront profile and brand assets
+
+### Phase 3: catalog, collections, and inventory
+
+- product CRUD
+- variant and media model
+- collection management
+- inventory levels, adjustments, and thresholds
+
+### Phase 4: orders, payments, and payouts
+
+- order model
+- payment provider integration
+- ledger and settlement calculations
+- payouts and payout status tracking
+- refunds and returns
+
+### Phase 5: shipping, customers, campaigns, and content commerce
+
+- carrier rules
+- shipment tracking
+- customer notes and segmentation
+- campaigns and promo codes
+- content placements and attribution
+
+### Phase 6: analytics and account health
+
+- KPI aggregation
+- performance reporting
+- notification feed
+- vendor-facing account health tasks
+- internal tools for review and intervention
+
+## 14. Open Product Decisions the Team Should Resolve Early
+
+These are not blockers for schema design, but the answers will change some endpoint behavior.
+
+- Can one organization operate multiple stores, or should the first release assume one store per organization?
+- Can vendors trigger refunds directly, or only request them?
+- Are shipping accounts vendor-specific, platform-managed, or a mix of both?
+- Should featured placements be vendor-readable only, or can vendors submit placement requests?
+- Will customer messaging happen inside BV Creator Hub, or through an external CRM provider?
+- Will content commerce placements be authored inside this dashboard, or linked from a separate CMS?
+
+## 15. Final Engineering Checklist
+
+Before calling the product production-ready, the team should be able to answer yes to the following.
+
+### Platform readiness
+
+- authentication works end to end
+- every merch route is tenant-scoped
+- permissions are enforced on the server
+- audit logs exist for sensitive actions
+- secrets are stored outside source control
+
+### Vendor workflow readiness
+
+- a new vendor can sign up, complete onboarding, upload documents, and resume later
+- a verified vendor can edit store profile, add products, create collections, and manage stock
+- a vendor can view real orders, shipments, returns, customers, payouts, and alerts
+- analytics are generated from real data, not manual entries
+
+### Financial and operational readiness
+
+- payments reconcile correctly
+- payouts are ledger-backed
+- inventory stays in sync with checkout and refunds
+- shipping updates flow back into orders
+- exports work on real datasets
+
+### Go-live readiness
+
+- monitoring and alerting are active
+- backup policy is documented
+- webhook retry strategy is in place
+- support and internal review tools exist for verification, payout issues, and interventions
+
+## 16. Closing Recommendation
+
+Build BV Creator Hub as a vendor-scoped commerce platform with a strong internal service layer behind it, not as a thin admin console tied directly to raw database tables.
+
+If the backend is designed around vendor ownership, ledger-backed finance, inventory integrity, and protected internal operations, the current frontend can be turned into a reliable production product without a second architecture reset.
